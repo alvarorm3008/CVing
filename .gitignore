@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Environment
+.env
+
+# Build / test artifacts
+frontend/dist/
+backend/test_output/
+test-ats.pdf
+*.pdf
+!backend/static/**
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/

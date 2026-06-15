@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #1a1a2e;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 32% 68%;
+      min-height: 297mm;
+    }
+    .sidebar {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 32px 22px;
+    }
+    .sidebar h1 {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-size: 18pt;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #334155;
+      padding-bottom: 14px;
+    }
+    .side-section { margin-bottom: 22px; }
+    .side-title {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-size: 8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    .side-text { font-size: 9pt; line-height: 1.55; }
+    .side-text p { margin-bottom: 6px; }
+    .side-skills { list-style: none; }
+    .side-skills li {
+      font-size: 9pt;
+      padding: 4px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+    .main {
+      padding: 32px 30px;
+      background: #fff;
+    }
+    .main-section { margin-bottom: 20px; }
+    .main-title {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-size: 9pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #0f172a;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+    }
+    .summary { color: #334155; font-size: 10.5pt; }
+    .job { margin-bottom: 16px; }
+    .job-role {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 11pt;
+    }
+    .job-company { color: #475569; font-size: 10pt; margin-bottom: 4px; }
+    .job-period { font-size: 9pt; color: #64748b; margin-bottom: 6px; }
+    ul { padding-left: 18px; }
+    li { margin-bottom: 4px; color: #334155; }
+    .edu { margin-bottom: 10px; }
+    .edu-degree { font-weight: 600; }
+    .edu-school { color: #475569; font-size: 9.5pt; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>{{ name }}</h1>
+
+      {% if contact_items %}
+      <div class="side-section">
+        <h2 class="side-title">Contacto</h2>
+        <div class="side-text">
+          {% for item in contact_items %}<p>{{ item }}</p>{% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if skills %}
+      <div class="side-section">
+        <h2 class="side-title">Competencias</h2>
+        <ul class="side-skills">
+          {% for skill in skills %}<li>{{ skill }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if languages %}
+      <div class="side-section">
+        <h2 class="side-title">Idiomas</h2>
+        <div class="side-text"><p>{{ languages | join(" · ") }}</p></div>
+      </div>
+      {% endif %}
+
+      {% if certifications %}
+      <div class="side-section">
+        <h2 class="side-title">Certificaciones</h2>
+        <ul class="side-skills">
+          {% for cert in certifications %}<li>{{ cert }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </aside>
+
+    <main class="main">
+      {% if summary %}
+      <section class="main-section">
+        <h2 class="main-title">Perfil</h2>
+        <p class="summary">{{ summary }}</p>
+      </section>
+      {% endif %}
+
+      {% if experience %}
+      <section class="main-section">
+        <h2 class="main-title">Trayectoria profesional</h2>
+        {% for job in experience %}
+        <div class="job">
+          <div class="job-role">{{ job.role }}</div>
+          {% if job.company %}<div class="job-company">{{ job.company }}{% if job.location %} · {{ job.location }}{% endif %}</div>{% endif %}
+          {% if job.period %}<div class="job-period">{{ job.period }}</div>{% endif %}
+          {% if job.bullets %}
+          <ul>
+            {% for bullet in job.bullets %}<li>{{ bullet }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </section>
+      {% endif %}
+
+      {% if education %}
+      <section class="main-section">
+        <h2 class="main-title">Formación</h2>
+        {% for edu in education %}
+        <div class="edu">
+          <div class="edu-degree">{{ edu.degree }}</div>
+          {% if edu.school %}<div class="edu-school">{{ edu.school }}{% if edu.period %} · {{ edu.period }}{% endif %}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </section>
+      {% endif %}
+    </main>
+  </div>
+</body>
+</html>
