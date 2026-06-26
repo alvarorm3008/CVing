@@ -148,33 +148,22 @@ CVing/
 
 ## Deployment
 
-Portfolio setup used for this and similar full-stack projects:
+Portfolio hosting strategy:
 
 | Project type | Host |
 |--------------|------|
-| Next.js + Supabase (main portfolio piece) | **Vercel** |
-| Full-stack with Docker (CVing, etc.) | **Coolify on a Hetzner VPS** |
+| Next.js + Supabase (main portfolio) | **Vercel** (free) |
+| Full-stack with Docker (CVing, etc.) | **Render** (free tier) |
 
-One VPS (~€4–5/mo) runs every Dockerized demo. No cold starts, one panel, one bill.
+### Render (recommended for CVing)
 
-### Coolify (recommended for CVing)
+1. [render.com](https://render.com) → **New** → **Blueprint** → connect `alvarorm3008/CVing`
+2. Set `GEMINI_API_KEY` when prompted
+3. Deploy — uses root `Dockerfile` + `render.yaml`
 
-**One-time VPS setup**
+Free tier sleeps after 15 min of inactivity (first visit ~30–60 s). Zero maintenance, zero cost.
 
-1. Create a server at [Hetzner Cloud](https://www.hetzner.com/cloud) (CX22 or similar, Ubuntu 24.04)
-2. Install Coolify on the server: [coolify.io/docs](https://coolify.io/docs/get-started/installation)
-3. In Coolify → **+ Add** → **New Project** → **Production**
-4. **+ New** → **Application** → **Public Repository** → `alvarorm3008/CVing`
-5. Build pack: **Dockerfile** (root). Port: **8000**
-6. Environment variables:
-   ```env
-   GEMINI_API_KEY=your_key_here
-   SERVE_FRONTEND=1
-   DEFAULT_GITHUB_USERNAME=your-github-username
-   ```
-7. Deploy → assign a domain (e.g. `cving.yourdomain.com`)
-
-Coolify rebuilds automatically on every push to `main`.
+See [docs/DEPLOY-RENDER.md](docs/DEPLOY-RENDER.md) for the full checklist.
 
 **Local production test**
 
@@ -184,12 +173,7 @@ docker compose up --build
 # → http://localhost:8000
 ```
 
-### Alternatives
-
-- **Render:** connect repo and use `render.yaml` (free tier sleeps after inactivity)
-- **Railway:** uses root `Dockerfile` + `railway.toml` (paid after free credits)
-
-Do **not** deploy this project on Vercel — Playwright/Chromium does not run there. Use Vercel only for the Next.js + Supabase portfolio app.
+Do **not** deploy this project on Vercel — Playwright/Chromium does not run there.
 
 ## License
 

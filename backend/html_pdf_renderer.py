@@ -124,9 +124,9 @@ def _get_browser(playwright):
         if _browser is not None:
             return _browser
         for launch_kwargs in (
-            {"headless": True},
-            {"headless": True, "channel": "chrome"},
-            {"headless": True, "channel": "msedge"},
+            {"headless": True, "args": ["--disable-dev-shm-usage", "--no-sandbox", "--disable-gpu"]},
+            {"headless": True, "channel": "chrome", "args": ["--disable-dev-shm-usage", "--no-sandbox", "--disable-gpu"]},
+            {"headless": True, "channel": "msedge", "args": ["--disable-dev-shm-usage", "--no-sandbox", "--disable-gpu"]},
         ):
             try:
                 _browser = playwright.chromium.launch(**launch_kwargs)
