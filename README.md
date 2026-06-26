@@ -148,25 +148,48 @@ CVing/
 
 ## Deployment
 
-**Recommended: one URL on Railway or Render** (frontend + backend together).
+Portfolio setup used for this and similar full-stack projects:
 
-### Railway (easiest)
+| Project type | Host |
+|--------------|------|
+| Next.js + Supabase (main portfolio piece) | **Vercel** |
+| Full-stack with Docker (CVing, etc.) | **Coolify on a Hetzner VPS** |
 
-1. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub** → select `CVing`
-2. Add env var: `GEMINI_API_KEY` = your [Google AI Studio](https://aistudio.google.com/apikey) key
-3. Deploy — Railway uses the root `Dockerfile` and `railway.toml` automatically
-4. Open the generated URL — app and API share the same origin (no CORS setup needed)
+One VPS (~€4–5/mo) runs every Dockerized demo. No cold starts, one panel, one bill.
 
-### Render
+### Coolify (recommended for CVing)
 
-1. [render.com](https://render.com) → **New** → **Blueprint** → connect `CVing` (uses `render.yaml`)
-2. Set `GEMINI_API_KEY` when prompted
-3. Deploy
+**One-time VPS setup**
 
-### Split deploy (optional)
+1. Create a server at [Hetzner Cloud](https://www.hetzner.com/cloud) (CX22 or similar, Ubuntu 24.04)
+2. Install Coolify on the server: [coolify.io/docs](https://coolify.io/docs/get-started/installation)
+3. In Coolify → **+ Add** → **New Project** → **Production**
+4. **+ New** → **Application** → **Public Repository** → `alvarorm3008/CVing`
+5. Build pack: **Dockerfile** (root). Port: **8000**
+6. Environment variables:
+   ```env
+   GEMINI_API_KEY=your_key_here
+   SERVE_FRONTEND=1
+   DEFAULT_GITHUB_USERNAME=your-github-username
+   ```
+7. Deploy → assign a domain (e.g. `cving.yourdomain.com`)
 
-- **Frontend only:** Vercel with root directory `frontend` and `VITE_API_URL` pointing to your backend
-- **Backend only:** `backend/Dockerfile` on Railway/Render with `SERVE_FRONTEND` unset
+Coolify rebuilds automatically on every push to `main`.
+
+**Local production test**
+
+```bash
+cp backend/.env.example .env   # fill GEMINI_API_KEY
+docker compose up --build
+# → http://localhost:8000
+```
+
+### Alternatives
+
+- **Render:** connect repo and use `render.yaml` (free tier sleeps after inactivity)
+- **Railway:** uses root `Dockerfile` + `railway.toml` (paid after free credits)
+
+Do **not** deploy this project on Vercel — Playwright/Chromium does not run there. Use Vercel only for the Next.js + Supabase portfolio app.
 
 ## License
 
