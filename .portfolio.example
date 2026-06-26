@@ -1,0 +1,10 @@
+{
+  "type": "portfolio",
+  "host": "coolify",
+  "stack": "describe your stack here",
+  "port": 8000,
+  "env": [
+    "REQUIRED_ENV_VAR"
+  ],
+  "notes": "optional: Playwright, DB, special deps..."
+}
