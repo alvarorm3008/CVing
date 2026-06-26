@@ -1,0 +1,10 @@
+.git
+.gitignore
+**/.venv
+**/node_modules
+**/__pycache__
+**/.env
+frontend/dist
+backend/static/app
+*.md
+.vercel

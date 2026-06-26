@@ -1,6 +1,7 @@
 import base64
 import os
 from io import BytesIO
+from pathlib import Path
 from typing import Optional
 
 from ai_client import (
@@ -30,7 +31,8 @@ from docx_extractor import extract_text_from_docx
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 from application_pipeline import run_full_application_parallel
 from offer_research import research_job_offer
 from ats_cv_generator import generate_cv_pdf as generate_ats_cv_pdf
@@ -738,3 +740,30 @@ def render_pdf(request: RenderPDFRequest):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+def _mount_frontend() -> None:
+    if os.getenv("SERVE_FRONTEND", "").lower() not in ("1", "true", "yes"):
+        return
+
+    static_dir = Path(__file__).parent / "static" / "app"
+    if not static_dir.is_dir():
+        return
+
+    assets_dir = static_dir / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        if full_path:
+            file_path = static_dir / full_path
+            if file_path.is_file():
+                return FileResponse(file_path)
+        index = static_dir / "index.html"
+        if index.is_file():
+            return FileResponse(index)
+        raise HTTPException(status_code=404, detail="Frontend not found")
+
+
+_mount_frontend()

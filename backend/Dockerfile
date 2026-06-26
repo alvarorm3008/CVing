@@ -1,3 +1,4 @@
+# Backend-only image. For frontend + API together, use the root Dockerfile.
 FROM mcr.microsoft.com/playwright/python:v1.49.1-jammy
 
 WORKDIR /app

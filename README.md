@@ -148,34 +148,25 @@ CVing/
 
 ## Deployment
 
-### Frontend (Vercel)
+**Recommended: one URL on Railway or Render** (frontend + backend together).
 
-1. Import the GitHub repo at [vercel.com/new](https://vercel.com/new)
-2. Set **Root Directory** to `frontend`
-3. Add environment variable: `VITE_API_URL` = your backend URL (e.g. `https://cving-api.railway.app`)
-4. Deploy
+### Railway (easiest)
 
-Or via CLI from the `frontend` folder:
+1. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub** → select `CVing`
+2. Add env var: `GEMINI_API_KEY` = your [Google AI Studio](https://aistudio.google.com/apikey) key
+3. Deploy — Railway uses the root `Dockerfile` and `railway.toml` automatically
+4. Open the generated URL — app and API share the same origin (no CORS setup needed)
 
-```bash
-cd frontend
-npx vercel --prod
-```
+### Render
 
-### Backend (Railway or Render)
+1. [render.com](https://render.com) → **New** → **Blueprint** → connect `CVing` (uses `render.yaml`)
+2. Set `GEMINI_API_KEY` when prompted
+3. Deploy
 
-**Railway:** New project → Deploy from GitHub → set root directory to `backend` (uses `Dockerfile` + `railway.toml`).
+### Split deploy (optional)
 
-**Render:** Use the included `render.yaml` blueprint, or create a Web Service with Docker, root dir `backend`.
-
-Required env vars on the backend:
-
-```env
-GEMINI_API_KEY=your_key_here
-ALLOWED_ORIGINS=https://your-app.vercel.app
-```
-
-`ALLOWED_ORIGINS` is optional — `*.vercel.app` preview URLs are allowed automatically.
+- **Frontend only:** Vercel with root directory `frontend` and `VITE_API_URL` pointing to your backend
+- **Backend only:** `backend/Dockerfile` on Railway/Render with `SERVE_FRONTEND` unset
 
 ## License
 
