@@ -146,6 +146,37 @@ CVing/
 
 **Full application** triggers multiple API calls (adapt + research + salary + letter). On the free tier you can hit per-minute or daily limits quickly. Prefer **Adapt CV only** or **Fast mode** if that happens often.
 
+## Deployment
+
+### Frontend (Vercel)
+
+1. Import the GitHub repo at [vercel.com/new](https://vercel.com/new)
+2. Set **Root Directory** to `frontend`
+3. Add environment variable: `VITE_API_URL` = your backend URL (e.g. `https://cving-api.railway.app`)
+4. Deploy
+
+Or via CLI from the `frontend` folder:
+
+```bash
+cd frontend
+npx vercel --prod
+```
+
+### Backend (Railway or Render)
+
+**Railway:** New project → Deploy from GitHub → set root directory to `backend` (uses `Dockerfile` + `railway.toml`).
+
+**Render:** Use the included `render.yaml` blueprint, or create a Web Service with Docker, root dir `backend`.
+
+Required env vars on the backend:
+
+```env
+GEMINI_API_KEY=your_key_here
+ALLOWED_ORIGINS=https://your-app.vercel.app
+```
+
+`ALLOWED_ORIGINS` is optional — `*.vercel.app` preview URLs are allowed automatically.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

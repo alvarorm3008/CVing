@@ -36,7 +36,7 @@ import {
   saveCvBase,
 } from "./storage.js";
 
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const ADAPTATION_MODE = "ats-perfect";
 const AI_PROVIDER = "gemini";
 const TEMPLATE_ID = "modern-pro";
