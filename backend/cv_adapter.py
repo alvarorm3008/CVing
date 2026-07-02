@@ -12,7 +12,7 @@ from cv_pdf_prep import (
 )
 from language_utils import (
     output_language_instruction,
-    resolve_output_language,
+    resolve_adaptation_settings,
     translation_instruction,
 )
 
@@ -181,11 +181,10 @@ def adapt_cv_sections(
     if mode not in VALID_MODES:
         mode = "honest"
 
-    resolved_lang = resolve_output_language(
+    resolved_lang, translate_content = resolve_adaptation_settings(
         output_language,
         cv=cv,
         job_description=job_description,
-        translate_content=translate_content,
     )
     lang_instruction = output_language_instruction(resolved_lang, translate_content=translate_content)
     translate_block = translation_instruction(translate_content, resolved_lang)
@@ -268,6 +267,11 @@ def apply_adaptations(
 ) -> StructuredCV:
     updated = cv.model_copy(deep=True)
     preserve_contact(cv.contact, updated.contact)
+    resolved_lang, do_translate = resolve_adaptation_settings(
+        output_language,
+        cv=cv,
+        job_description=job_description,
+    )
     updated.summary = adapted.summary.strip()
     updated.skills = [skill.strip() for skill in adapted.skills if skill.strip()]
 
@@ -280,17 +284,12 @@ def apply_adaptations(
         updated.experience = merge_experience(
             cv.experience,
             adapted.experience,
-            translated=translate_content,
+            translated=do_translate,
         )
     else:
         updated.experience = list(cv.experience)
 
-    updated.document_language = resolve_output_language(
-        output_language,
-        cv=cv,
-        job_description=job_description,
-        translate_content=translate_content,
-    )
+    updated.document_language = resolved_lang
 
     enrich_cv_links(updated)
     return prepare_cv_for_pdf(updated, target_role=adapted.target_role, truncate=True)

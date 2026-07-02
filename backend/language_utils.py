@@ -220,6 +220,59 @@ def detect_language_hint(text: str) -> str:
     return max(scores, key=scores.get)
 
 
+def resolve_cv_language(cv: StructuredCV | None) -> str:
+    if cv is None:
+        return ""
+
+    if (cv.document_language or "").strip():
+        return normalize_language_code(cv.document_language)
+
+    cv_blob = " ".join(
+        filter(
+            None,
+            [
+                cv.summary,
+                " ".join(cv.skills),
+                " ".join(cv.languages),
+                " ".join(item.role for item in cv.experience),
+            ],
+        )
+    )
+    return detect_language_hint(cv_blob)
+
+
+def should_translate_cv(cv_lang: str, target_lang: str) -> bool:
+    if not target_lang or target_lang == "auto":
+        return False
+    if not cv_lang:
+        return True
+    return cv_lang != target_lang
+
+
+def resolve_adaptation_settings(
+    output_language: str = "auto",
+    *,
+    cv: StructuredCV | None = None,
+    job_description: str = "",
+) -> tuple[str, bool]:
+    """Job offer language wins. Translate full CV when it differs from the source."""
+    requested = normalize_language_code(output_language)
+    job_lang = detect_language_hint(job_description)
+    cv_lang = resolve_cv_language(cv)
+
+    if requested != "auto":
+        target = requested
+    elif job_lang:
+        target = job_lang
+    elif cv_lang:
+        target = cv_lang
+    else:
+        target = "es"
+
+    translate = should_translate_cv(cv_lang, target)
+    return target, translate
+
+
 def resolve_output_language(
     output_language: str,
     *,
@@ -232,30 +285,15 @@ def resolve_output_language(
         return requested
 
     job_lang = detect_language_hint(job_description)
-
-    if translate_content and job_lang:
+    if job_lang:
         return job_lang
 
     if cv and (cv.document_language or "").strip():
         return normalize_language_code(cv.document_language)
 
-    if job_lang:
-        return job_lang
-
-    if cv:
-        cv_blob = " ".join(
-            filter(
-                None,
-                [
-                    cv.summary,
-                    " ".join(cv.skills),
-                    " ".join(cv.languages),
-                ],
-            )
-        )
-        cv_lang = detect_language_hint(cv_blob)
-        if cv_lang:
-            return cv_lang
+    cv_lang = resolve_cv_language(cv)
+    if cv_lang:
+        return cv_lang
 
     return "es"
 
@@ -287,7 +325,8 @@ def parse_language_instruction() -> str:
 def translation_instruction(translate_content: bool, target_language: str) -> str:
     if not translate_content:
         return (
-            "LANGUAGE: Keep each field in a single language (the CV's original language). "
+            "LANGUAGE: CV and offer are already in the same language. "
+            "Keep each field in that single language. "
             "Do NOT output bilingual duplicates (e.g. Spanish line + English translation)."
         )
     code = normalize_language_code(target_language)
@@ -296,6 +335,8 @@ def translation_instruction(translate_content: bool, target_language: str) -> st
     name = language_name(code)
     return (
         f"TRANSLATION MODE: Rewrite ALL user-facing CV content into {name} ({code}) ONLY.\n"
+        "- Translate summary, role titles, bullet narratives, skill labels and education lines.\n"
+        "- Section-equivalent content in JSON must read naturally in the target language.\n"
         "- One language throughout — NEVER keep original text alongside translation.\n"
         "- NEVER duplicate bullets or skills in two languages.\n"
         "- Preserve facts, dates, company names, URLs, GitHub/LinkedIn links and technical terms.\n"

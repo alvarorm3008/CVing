@@ -1,6 +1,6 @@
 from ai_client import call_ai
 from cv_schema import ATSMatchInfo, CoverLetter, OfferResearch, StructuredCV, parse_json_model
-from language_utils import output_language_instruction, resolve_output_language, translation_instruction
+from language_utils import output_language_instruction, resolve_adaptation_settings, translation_instruction
 
 COVER_LETTER_PROMPT = """You write compelling, honest cover letters for job applications.
 
@@ -134,14 +134,13 @@ def generate_cover_letter(
     output_language: str = "auto",
     translate_content: bool = False,
 ) -> CoverLetter:
-    resolved_lang = resolve_output_language(
+    resolved_lang, translate_content = resolve_adaptation_settings(
         output_language,
         cv=cv,
         job_description=job_description,
-        translate_content=translate_content,
     )
-    lang_instruction = output_language_instruction(resolved_lang, translate_content=translate_content)
-    translate_block = translation_instruction(translate_content, resolved_lang)
+    lang_instruction = output_language_instruction(resolved_lang, translate_content=True)
+    translate_block = translation_instruction(True, resolved_lang)
 
     user_message = (
         f"{lang_instruction}\n{translate_block}\n\n"

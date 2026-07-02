@@ -15,21 +15,21 @@ export default function ApplicationProgress({ currentStep, active, indeterminate
 
   if (indeterminate) {
     return (
-      <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-5">
+      <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
-          <Loader2 className="h-5 w-5 animate-spin text-indigo-300" />
-          <p className="text-sm font-medium text-indigo-200">{t("fullApp.progressTitle")}</p>
+          <Loader2 className="h-5 w-5 animate-spin text-neutral-700" />
+          <p className="text-sm font-semibold text-neutral-900">{t("fullApp.progressTitle")}</p>
         </div>
-        <p className="mb-4 text-sm text-slate-400">{t("progress.indeterminate")}</p>
-        <ol className="space-y-2 opacity-70">
+        <p className="mb-4 text-sm text-neutral-700">{t("progress.indeterminate")}</p>
+        <ol className="space-y-2">
           {STEPS.map((step) => {
             const Icon = step.icon;
             return (
-              <li key={step.id} className="flex items-center gap-3 rounded-xl px-4 py-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+              <li key={step.id} className="flex items-center gap-3 rounded-xl bg-neutral-50 px-4 py-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200 text-neutral-600">
                   <Icon className="h-3.5 w-3.5" />
                 </span>
-                <span className="text-sm text-slate-500">{step.label}</span>
+                <span className="text-sm text-neutral-700">{step.label}</span>
               </li>
             );
           })}
@@ -39,8 +39,8 @@ export default function ApplicationProgress({ currentStep, active, indeterminate
   }
 
   return (
-    <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-5">
-      <p className="mb-4 text-sm font-medium text-indigo-200">{t("fullApp.progressTitle")}</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <p className="mb-4 text-sm font-semibold text-neutral-900">{t("fullApp.progressTitle")}</p>
       <ol className="space-y-3">
         {STEPS.map((step) => {
           const Icon = step.icon;
@@ -52,17 +52,17 @@ export default function ApplicationProgress({ currentStep, active, indeterminate
               key={step.id}
               className={clsx(
                 "flex items-center gap-3 rounded-xl px-4 py-3 transition",
-                done && "bg-emerald-500/10",
-                running && "bg-indigo-500/15 ring-1 ring-indigo-500/30",
-                !done && !running && "opacity-40",
+                done && "bg-emerald-50",
+                running && "bg-neutral-100 ring-1 ring-neutral-300",
+                !done && !running && "opacity-50",
               )}
             >
               <span
                 className={clsx(
                   "flex h-8 w-8 items-center justify-center rounded-full",
-                  done && "bg-emerald-500/20 text-emerald-400",
-                  running && "bg-indigo-500/20 text-indigo-300",
-                  !done && !running && "bg-slate-800 text-slate-500",
+                  done && "bg-emerald-200 text-emerald-900",
+                  running && "bg-neutral-800 text-white",
+                  !done && !running && "bg-neutral-200 text-neutral-600",
                 )}
               >
                 {done ? (
@@ -76,9 +76,9 @@ export default function ApplicationProgress({ currentStep, active, indeterminate
               <span
                 className={clsx(
                   "text-sm font-medium",
-                  done && "text-emerald-300",
-                  running && "text-white",
-                  !done && !running && "text-slate-500",
+                  done && "text-emerald-900",
+                  running && "text-neutral-900",
+                  !done && !running && "text-neutral-600",
                 )}
               >
                 {step.label}

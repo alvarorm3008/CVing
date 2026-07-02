@@ -34,13 +34,32 @@ PDF/DOCX → parser (Gemini) → ATS-perfect adaptation → modern-pro PDF
 - **GEMINI_API_KEY** — [Google AI Studio](https://aistudio.google.com/apikey)
 - **Playwright Chromium** — required for the visual PDF
 
-## Setup
+## Quick start (local)
+
+**Terminal 1 — backend** (from project root):
+
+```bash
+./scripts/start-backend.sh
+```
+
+**Terminal 2 — frontend**:
+
+```bash
+./scripts/start-frontend.sh
+```
+
+Open **http://localhost:5173**
+
+> If `uvicorn: command not found`, you forgot the venv. Use the script above or:
+> `cd backend && source .venv/bin/activate && uvicorn main:app --reload --port 8000`
+
+## Setup (first time only)
 
 ### Backend
 
 ```bash
 cd backend
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 playwright install chromium
@@ -56,8 +75,6 @@ cd frontend
 npm install
 npm run dev
 ```
-
-Open **http://localhost:5173**
 
 ## Usage
 

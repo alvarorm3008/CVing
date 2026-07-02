@@ -1,12 +1,12 @@
 import { BadgeCheck, ExternalLink } from "lucide-react";
-import { useI18n } from "./i18n/I18nContext.jsx";
+import { getCvLabels } from "./cvLabels.js";
 
 function ContactLine({ contact }) {
   const links = [];
 
   if (contact.email) {
     links.push(
-      <a key="email" href={`mailto:${contact.email}`} className="text-indigo-600 hover:underline">
+      <a key="email" href={`mailto:${contact.email}`} className="text-neutral-800 underline hover:text-neutral-950">
         {contact.email}
       </a>,
     );
@@ -20,7 +20,7 @@ function ContactLine({ contact }) {
   if (contact.linkedin) {
     const href = contact.linkedin.startsWith("http") ? contact.linkedin : `https://${contact.linkedin}`;
     links.push(
-      <a key="linkedin" href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-indigo-600 hover:underline">
+      <a key="linkedin" href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-neutral-800 underline hover:text-neutral-950">
         LinkedIn <ExternalLink className="h-3 w-3" />
       </a>,
     );
@@ -28,7 +28,7 @@ function ContactLine({ contact }) {
   if (contact.github) {
     const raw = contact.github.startsWith("http") ? contact.github : `https://github.com/${contact.github.replace(/^@/, "")}`;
     links.push(
-      <a key="github" href={raw} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-indigo-600 hover:underline">
+      <a key="github" href={raw} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-neutral-800 underline hover:text-neutral-950">
         GitHub <ExternalLink className="h-3 w-3" />
       </a>,
     );
@@ -36,7 +36,7 @@ function ContactLine({ contact }) {
   if (contact.website) {
     const href = contact.website.startsWith("http") ? contact.website : `https://${contact.website}`;
     links.push(
-      <a key="web" href={href} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+      <a key="web" href={href} target="_blank" rel="noopener noreferrer" className="text-neutral-800 underline hover:text-neutral-950">
         {contact.website.replace(/^https?:\/\//, "")}
       </a>,
     );
@@ -44,10 +44,10 @@ function ContactLine({ contact }) {
 
   if (!links.length) return null;
   return (
-    <p className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+    <p className="flex flex-wrap items-center gap-2 text-sm text-neutral-600">
       {links.map((item, i) => (
         <span key={i} className="flex items-center gap-2">
-          {i > 0 && <span className="text-slate-300">·</span>}
+          {i > 0 && <span className="text-neutral-400">·</span>}
           {item}
         </span>
       ))}
@@ -57,11 +57,11 @@ function ContactLine({ contact }) {
 
 function Section({ title, adapted, adaptedLabel, children }) {
   return (
-    <section className="border-t border-slate-700/50 pt-5 first:border-0 first:pt-0">
+    <section className="border-t border-neutral-200 pt-5 first:border-0 first:pt-0">
       <div className="mb-3 flex items-center gap-2">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400">{title}</h3>
+        <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-800">{title}</h3>
         {adapted && (
-          <span className="flex items-center gap-1 rounded-full bg-indigo-500/20 px-2 py-0.5 text-xs text-indigo-300">
+          <span className="flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
             <BadgeCheck className="h-3 w-3" />
             {adaptedLabel}
           </span>
@@ -73,37 +73,37 @@ function Section({ title, adapted, adaptedLabel, children }) {
 }
 
 export default function CVPreview({ cv }) {
-  const { t } = useI18n();
   if (!cv) return null;
 
-  const adaptedLabel = t("preview.adapted");
+  const labels = getCvLabels(cv.document_language);
+  const adaptedLabel = labels.adapted;
 
   return (
-    <article className="rounded-2xl border border-slate-700/60 bg-white p-8 text-slate-800 shadow-xl shadow-indigo-500/5">
-      <header className="border-b border-slate-200 pb-5 text-center">
-        <h2 className="text-2xl font-bold text-slate-900">
-          {cv.contact.full_name || t("preview.defaultName")}
+    <article className="rounded-2xl border border-neutral-200 bg-white p-8 text-neutral-900 shadow-sm">
+      <header className="border-b border-neutral-200 pb-5 text-center">
+        <h2 className="text-2xl font-bold text-neutral-900">
+          {cv.contact.full_name || labels.defaultName}
         </h2>
         {cv.contact.headline && (
-          <p className="mt-1 text-base text-slate-600">{cv.contact.headline}</p>
+          <p className="mt-1 text-base text-neutral-600">{cv.contact.headline}</p>
         )}
         <ContactLine contact={cv.contact} />
       </header>
 
       <div className="mt-5 space-y-5">
         {cv.summary && (
-          <Section title={t("preview.summary")} adapted adaptedLabel={adaptedLabel}>
-            <p className="leading-relaxed text-slate-600">{cv.summary}</p>
+          <Section title={labels.summary} adapted adaptedLabel={adaptedLabel}>
+            <p className="leading-relaxed text-neutral-600">{cv.summary}</p>
           </Section>
         )}
 
         {cv.skills?.length > 0 && (
-          <Section title={t("preview.skills")} adapted adaptedLabel={adaptedLabel}>
+          <Section title={labels.skills} adapted adaptedLabel={adaptedLabel}>
             <div className="flex flex-wrap gap-2">
               {cv.skills.map((skill) => (
                 <span
                   key={skill}
-                  className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700"
+                  className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-800"
                 >
                   {skill}
                 </span>
@@ -113,20 +113,20 @@ export default function CVPreview({ cv }) {
         )}
 
         {cv.experience?.length > 0 && (
-          <Section title={t("preview.experience")} adapted adaptedLabel={adaptedLabel}>
+          <Section title={labels.experience} adapted adaptedLabel={adaptedLabel}>
             {cv.experience.map((item, index) => (
               <div key={`${item.role}-${index}`} className="mb-4 last:mb-0">
-                <h4 className="font-semibold text-slate-900">
+                <h4 className="font-semibold text-neutral-900">
                   {item.role}
                   {item.company ? ` — ${item.company}` : ""}
                 </h4>
                 {(item.period || item.location) && (
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-neutral-500">
                     {[item.period, item.location].filter(Boolean).join(" | ")}
                   </p>
                 )}
                 {item.bullets?.length > 0 && (
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-neutral-600">
                     {item.bullets.map((bullet, bulletIndex) => (
                       <li key={`${bullet}-${bulletIndex}`}>{bullet}</li>
                     ))}
@@ -138,22 +138,22 @@ export default function CVPreview({ cv }) {
         )}
 
         {cv.education?.length > 0 && (
-          <Section title={t("preview.education")}>
+          <Section title={labels.education}>
             {cv.education.map((item, index) => (
               <div key={`${item.degree}-${index}`} className="mb-2">
                 <h4 className="font-semibold">
                   {item.degree}
                   {item.school ? ` — ${item.school}` : ""}
                 </h4>
-                {item.period && <p className="text-sm text-slate-500">{item.period}</p>}
+                {item.period && <p className="text-sm text-neutral-500">{item.period}</p>}
               </div>
             ))}
           </Section>
         )}
 
         {cv.certifications?.length > 0 && (
-          <Section title={t("preview.certifications")}>
-            <ul className="list-disc space-y-1 pl-5 text-slate-600">
+          <Section title={labels.certifications}>
+            <ul className="list-disc space-y-1 pl-5 text-neutral-600">
               {cv.certifications.map((cert) => (
                 <li key={cert}>{cert}</li>
               ))}
@@ -162,8 +162,8 @@ export default function CVPreview({ cv }) {
         )}
 
         {cv.languages?.length > 0 && (
-          <Section title={t("preview.languages")}>
-            <p className="text-slate-600">{cv.languages.join(", ")}</p>
+          <Section title={labels.languages}>
+            <p className="text-neutral-600">{cv.languages.join(", ")}</p>
           </Section>
         )}
       </div>

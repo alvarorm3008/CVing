@@ -1,5 +1,6 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { useI18n } from "./i18n/I18nContext.jsx";
 
 function countChanges(original, adapted) {
   let changes = 0;
@@ -20,33 +21,31 @@ function MiniCV({ cv, label, accent }) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <span className={`h-2 w-2 rounded-full ${accent}`} />
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-600">{label}</span>
       </div>
-      <div className="rounded-xl border border-slate-700/60 bg-slate-900/80 p-4 text-sm">
-        <h4 className="font-bold text-white">{cv.contact?.full_name || "CV"}</h4>
-        {cv.summary && (
-          <p className="mt-2 line-clamp-3 text-slate-300">{cv.summary}</p>
-        )}
+      <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
+        <h4 className="font-bold text-neutral-900">{cv.contact?.full_name || "CV"}</h4>
+        {cv.summary && <p className="mt-2 line-clamp-3 text-neutral-700">{cv.summary}</p>}
         {cv.skills?.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {cv.skills.slice(0, 8).map((skill) => (
               <span
                 key={skill}
-                className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300"
+                className="rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-xs text-neutral-800"
               >
                 {skill}
               </span>
             ))}
             {cv.skills.length > 8 && (
-              <span className="text-xs text-slate-500">+{cv.skills.length - 8}</span>
+              <span className="text-xs text-neutral-500">+{cv.skills.length - 8}</span>
             )}
           </div>
         )}
         {cv.experience?.[0] && (
-          <div className="mt-3 border-t border-slate-700/50 pt-3">
-            <p className="font-medium text-slate-200">{cv.experience[0].role}</p>
+          <div className="mt-3 border-t border-neutral-200 pt-3">
+            <p className="font-medium text-neutral-900">{cv.experience[0].role}</p>
             {cv.experience[0].bullets?.[0] && (
-              <p className="mt-1 line-clamp-2 text-xs text-slate-400">
+              <p className="mt-1 line-clamp-2 text-xs text-neutral-600">
                 {cv.experience[0].bullets[0]}
               </p>
             )}
@@ -58,37 +57,34 @@ function MiniCV({ cv, label, accent }) {
 }
 
 export default function ComparisonPanel({ originalCv, adaptedCv, boosted }) {
+  const { t } = useI18n();
   if (!originalCv || !adaptedCv) return null;
 
   const changes = countChanges(originalCv, adaptedCv);
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-slate-900/90 to-indigo-950/30 p-5 backdrop-blur-sm"
-    >
+    <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="panel">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-indigo-400" />
-          <h3 className="font-semibold text-white">Antes vs después</h3>
+          <Sparkles className="h-5 w-5 text-neutral-700" />
+          <h3 className="font-semibold text-neutral-900">{t("comparison.title")}</h3>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <span className="rounded-full bg-indigo-500/20 px-2.5 py-1 text-indigo-300">
-            {changes} sección{changes !== 1 ? "es" : ""} adaptada{changes !== 1 ? "s" : ""}
+        <div className="flex items-center gap-2 text-xs">
+          <span className="rounded-full bg-neutral-100 px-2.5 py-1 font-medium text-neutral-800">
+            {t("comparison.changes").replace("{count}", String(changes))}
           </span>
           {boosted && (
-            <span className="rounded-full bg-emerald-500/20 px-2.5 py-1 text-emerald-300">
-              2ª pasada ATS
+            <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-medium text-emerald-900">
+              {t("comparison.boosted")}
             </span>
           )}
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
-        <MiniCV cv={originalCv} label="CV original" accent="bg-slate-500" />
-        <ArrowRight className="mx-auto hidden h-6 w-6 text-indigo-400 md:block" />
-        <MiniCV cv={adaptedCv} label="CV adaptado" accent="bg-indigo-500" />
+        <MiniCV cv={originalCv} label={t("comparison.original")} accent="bg-neutral-400" />
+        <ArrowRight className="mx-auto hidden h-6 w-6 text-neutral-500 md:block" />
+        <MiniCV cv={adaptedCv} label={t("comparison.adapted")} accent="bg-neutral-900" />
       </div>
     </motion.section>
   );

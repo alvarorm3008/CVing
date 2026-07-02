@@ -1,0 +1,77 @@
+const SECTION_LABELS = {
+  es: {
+    summary: "Resumen",
+    skills: "Habilidades",
+    experience: "Experiencia",
+    education: "Formación",
+    certifications: "Certificaciones",
+    languages: "Idiomas",
+    defaultName: "Tu nombre",
+    adapted: "Adaptado",
+  },
+  en: {
+    summary: "Summary",
+    skills: "Skills",
+    experience: "Experience",
+    education: "Education",
+    certifications: "Certifications",
+    languages: "Languages",
+    defaultName: "Your name",
+    adapted: "Adapted",
+  },
+  fr: {
+    summary: "Résumé",
+    skills: "Compétences",
+    experience: "Expérience",
+    education: "Formation",
+    certifications: "Certifications",
+    languages: "Langues",
+    defaultName: "Votre nom",
+    adapted: "Adapté",
+  },
+  de: {
+    summary: "Zusammenfassung",
+    skills: "Fähigkeiten",
+    experience: "Erfahrung",
+    education: "Ausbildung",
+    certifications: "Zertifikate",
+    languages: "Sprachen",
+    defaultName: "Ihr Name",
+    adapted: "Angepasst",
+  },
+  pt: {
+    summary: "Resumo",
+    skills: "Competências",
+    experience: "Experiência",
+    education: "Formação",
+    certifications: "Certificações",
+    languages: "Idiomas",
+    defaultName: "Seu nome",
+    adapted: "Adaptado",
+  },
+  it: {
+    summary: "Riassunto",
+    skills: "Competenze",
+    experience: "Esperienza",
+    education: "Formazione",
+    certifications: "Certificazioni",
+    languages: "Lingue",
+    defaultName: "Il tuo nome",
+    adapted: "Adattato",
+  },
+  ca: {
+    summary: "Resum",
+    skills: "Habilitats",
+    experience: "Experiència",
+    education: "Formació",
+    certifications: "Certificacions",
+    languages: "Idiomes",
+    defaultName: "El teu nom",
+    adapted: "Adaptat",
+  },
+};
+
+export function getCvLabels(documentLanguage) {
+  const code = (documentLanguage || "es").slice(0, 2).toLowerCase();
+  return SECTION_LABELS[code] || SECTION_LABELS.en;
+}

@@ -13,6 +13,7 @@ from ai_client import (
     validate_ai_provider,
 )
 from ats_analyzer import build_ats_match_info
+from ats_checker import analyze_ats_local, structured_cv_to_text
 from cv_adapter import AdaptedCVSections, adapt_cv_sections, apply_adaptations, boost_ats_sections, sections_from_cv
 from cv_parser import parse_cv_text
 from cover_letter import generate_cover_letter
@@ -38,7 +39,8 @@ from offer_research import research_job_offer
 from ats_cv_generator import generate_cv_pdf as generate_ats_cv_pdf
 from ats_cv_generator import generate_cv_txt
 from pdf_renderer import render_cv_pdf
-from language_utils import SUPPORTED_LANGUAGES, validate_output_language
+from job_fetcher import fetch_job_offer_text
+from language_utils import SUPPORTED_LANGUAGES, detect_language_hint, language_name, validate_output_language
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
 
@@ -410,6 +412,26 @@ def list_languages():
     ]
 
 
+@app.post("/fetch-job-offer")
+async def fetch_job_offer(url: str = Form(...)):
+    try:
+        return fetch_job_offer_text(url)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/detect-offer-language")
+async def detect_offer_language(job_description: str = Form(...)):
+    text = job_description.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Job description is required.")
+    code = detect_language_hint(text)
+    return {
+        "language": code or "unknown",
+        "name": language_name(code) if code else "",
+    }
+
+
 @app.get("/health")
 def health_check():
     from html_pdf_renderer import check_playwright_available
@@ -456,6 +478,32 @@ async def parse_cv(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return ParseCVResponse(cv=structured_cv, filename=cv_file.filename or "cv.pdf")
+
+
+@app.post("/check-ats")
+async def check_ats(
+    job_description: str = Form(...),
+    cv_file: UploadFile | None = File(None),
+    cv_json: str | None = Form(None),
+):
+    job_description = job_description.strip()
+    if not job_description:
+        raise HTTPException(status_code=400, detail="La descripción de la oferta es obligatoria.")
+
+    if cv_json:
+        cv_text = structured_cv_to_text(_parse_cv_json(cv_json))
+    elif cv_file and cv_file.filename:
+        cv_text = await read_cv_file(cv_file)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Sube un CV (PDF/DOCX) o usa un CV base guardado.",
+        )
+
+    try:
+        return analyze_ats_local(cv_text, job_description)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/adapt-cv", response_model=AdaptCVResponse)

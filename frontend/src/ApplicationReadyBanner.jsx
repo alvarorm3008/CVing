@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { CheckCircle2, Download, Mail, Package } from "lucide-react";
-
+import { useI18n } from "./i18n/I18nContext.jsx";
 import { coverLetterDisplayText } from "./coverLetterUtils.js";
 
 export default function ApplicationReadyBanner({
@@ -8,58 +8,68 @@ export default function ApplicationReadyBanner({
   jobTitle,
   onDownloadCv,
   onDownloadLetter,
+  onDownloadPack,
   downloading,
 }) {
+  const { t } = useI18n();
+
+  const subtitle =
+    companyName && jobTitle
+      ? t("pack.subtitle").replace("{jobTitle}", jobTitle).replace("{companyName}", companyName)
+      : t("pack.subtitleGeneric");
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-indigo-500/10 p-6"
+      className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-emerald-300">
+          <div className="flex items-center gap-2 text-emerald-800">
             <CheckCircle2 className="h-6 w-6" />
-            <h3 className="text-lg font-bold text-white">Candidatura lista</h3>
+            <h3 className="text-lg font-bold text-neutral-900">{t("pack.title")}</h3>
           </div>
-          <p className="mt-2 text-sm text-slate-300">
-            {companyName && jobTitle
-              ? `Todo preparado para aplicar a ${jobTitle} en ${companyName}.`
-              : "CV adaptado, investigación de empresa y carta de presentación generados."}
-          </p>
-          <ul className="mt-3 space-y-1 text-xs text-slate-400">
+          <p className="mt-2 text-sm leading-relaxed text-neutral-800">{subtitle}</p>
+          <ul className="mt-3 space-y-1 text-sm text-neutral-700">
             <li className="flex items-center gap-2">
-              <Package className="h-3.5 w-3.5 text-emerald-400" />
-              CV adaptado + PDF
+              <Package className="h-3.5 w-3.5 text-emerald-700" />
+              {t("pack.itemCv")}
             </li>
             <li className="flex items-center gap-2">
-              <Package className="h-3.5 w-3.5 text-emerald-400" />
-              Investigación de empresa y salario
+              <Package className="h-3.5 w-3.5 text-emerald-700" />
+              {t("pack.itemResearch")}
             </li>
             <li className="flex items-center gap-2">
-              <Package className="h-3.5 w-3.5 text-emerald-400" />
-              Carta de presentación personalizada
+              <Package className="h-3.5 w-3.5 text-emerald-700" />
+              {t("pack.itemLetter")}
             </li>
           </ul>
         </div>
         <div className="flex flex-wrap gap-2">
+          {onDownloadPack && (
+            <button
+              type="button"
+              onClick={onDownloadPack}
+              disabled={downloading}
+              className="btn-primary bg-emerald-700 hover:bg-emerald-800"
+            >
+              <Package className="h-4 w-4" />
+              {downloading ? t("pack.downloading") : t("pack.downloadPack")}
+            </button>
+          )}
           <button
             type="button"
             onClick={onDownloadCv}
             disabled={downloading}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+            className="btn-secondary"
           >
             <Download className="h-4 w-4" />
-            Descargar CV
+            {t("pack.downloadCv")}
           </button>
-          <button
-            type="button"
-            onClick={onDownloadLetter}
-            disabled={downloading}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-slate-700 disabled:opacity-50"
-          >
+          <button type="button" onClick={onDownloadLetter} disabled={downloading} className="btn-secondary">
             <Mail className="h-4 w-4" />
-            Descargar carta
+            {t("pack.downloadLetter")}
           </button>
         </div>
       </div>

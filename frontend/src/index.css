@@ -5,15 +5,41 @@
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgb(79 70 229 / 0.25), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(124 58 237 / 0.12), transparent);
+  @apply bg-neutral-100 text-neutral-900 antialiased;
   min-height: 100vh;
 }
 
 #root {
   min-height: 100vh;
+}
+
+/* Shared readable surfaces */
+.panel {
+  @apply rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm;
+}
+
+.text-body {
+  @apply text-neutral-700 leading-relaxed;
+}
+
+.text-muted {
+  @apply text-neutral-600;
+}
+
+.text-label {
+  @apply text-sm font-semibold text-neutral-800;
+}
+
+.input-field {
+  @apply w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300;
+}
+
+.btn-primary {
+  @apply inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition hover:bg-neutral-50 disabled:opacity-50;
 }
 
 @keyframes shimmer {
@@ -22,7 +48,19 @@ body {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, rgb(51 65 85 / 0.4) 25%, rgb(71 85 105 / 0.6) 50%, rgb(51 65 85 / 0.4) 75%);
+  background: linear-gradient(90deg, rgb(245 245 245) 25%, rgb(229 229 229) 50%, rgb(245 245 245) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+.action-card {
+  @apply relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition text-left;
+}
+
+.action-card:hover:not(:disabled) {
+  @apply border-neutral-400 shadow-md;
+}
+
+.action-card:disabled {
+  @apply cursor-not-allowed opacity-50;
 }

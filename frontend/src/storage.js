@@ -39,12 +39,23 @@ export function addHistoryEntry(entry) {
   const record = {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
+    status: "prepared",
     ...entry,
   };
   const next = [record, ...history].slice(0, MAX_HISTORY);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
   return next;
 }
+
+export function updateHistoryEntry(id, patch) {
+  const next = loadHistory().map((item) =>
+    item.id === id ? { ...item, ...patch } : item,
+  );
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  return next;
+}
+
+export const HISTORY_STATUSES = ["prepared", "sent", "interview", "rejected"];
 
 export function deleteHistoryEntry(id) {
   const next = loadHistory().filter((item) => item.id !== id);
