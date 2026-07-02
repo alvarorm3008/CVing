@@ -1,7 +1,6 @@
 import JSZip from "jszip";
+import { API_URL } from "./api.js";
 import { coverLetterDisplayText } from "./coverLetterUtils.js";
-
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000" : "");
 
 async function blobToBase64(blob) {
   return new Promise((resolve, reject) => {

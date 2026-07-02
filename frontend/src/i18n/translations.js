@@ -256,6 +256,9 @@ const es = {
     checking: "Comprobando conexión con el backend…",
     online: "Backend conectado",
     offline: "Backend no disponible — ejecuta: cd backend && uvicorn main:app --reload --port 8000",
+    offlineVercel:
+      "Backend no configurado en Vercel. Añade la variable VITE_API_URL con la URL de tu backend (p. ej. https://tu-app.onrender.com) en Vercel → Settings → Environment Variables y redespliega. Ver docs/DEPLOY-VERCEL.md",
+    waking: "Despertando backend en Render (plan free)… la primera petición puede tardar hasta 60 s.",
   },
   editor: {
     hint: "Edita antes de descargar. Pulsa «Actualizar PDF» para aplicar los cambios.",
@@ -570,6 +573,9 @@ const en = {
     checking: "Checking backend connection…",
     online: "Backend connected",
     offline: "Backend unavailable — run: cd backend && uvicorn main:app --reload --port 8000",
+    offlineVercel:
+      "Backend not configured on Vercel. Set VITE_API_URL to your backend URL (e.g. https://your-app.onrender.com) in Vercel → Settings → Environment Variables, then redeploy. See docs/DEPLOY-VERCEL.md",
+    waking: "Waking Render backend (free tier)… first request may take up to 60s.",
   },
   editor: {
     hint: "Edit before downloading. Click «Update PDF» to apply changes.",

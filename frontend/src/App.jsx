@@ -31,6 +31,7 @@ import FlowGuide from "./FlowGuide.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
 import OfferResearchPanel from "./OfferResearchPanel.jsx";
 import PreflightPanel from "./PreflightPanel.jsx";
+import { API_URL, isSplitDeployMisconfigured } from "./api.js";
 import { loadDemoData } from "./demoData.js";
 import { downloadApplicationPack } from "./downloadPack.js";
 import { getFlowStep, getRecommendedAction } from "./flowUtils.js";
@@ -48,7 +49,6 @@ import {
   updateHistoryEntry,
 } from "./storage.js";
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000" : "");
 const AI_PROVIDER = "gemini";
 const DEFAULT_TEMPLATE_ID = "modern-pro";
 const ATS_TEMPLATE_ID = "ats-plain";
@@ -233,14 +233,41 @@ function App() {
   useEffect(() => {
     setCvBase(loadCvBase());
     setHistory(loadHistory());
-    fetch(`${API_URL}/health`)
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then(() => setBackendStatus("online"))
-      .catch(() => setBackendStatus("offline"));
+
+    let cancelled = false;
+
+    async function checkHealth(attempt = 0) {
+      if (cancelled) return;
+      if (attempt === 0) setBackendStatus("checking");
+      else setBackendStatus("waking");
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 65000);
+        const res = await fetch(`${API_URL}/health`, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) throw new Error("health failed");
+        if (!cancelled) setBackendStatus("online");
+      } catch {
+        if (cancelled) return;
+        if (attempt < 2 && API_URL) {
+          setTimeout(() => checkHealth(attempt + 1), 2000);
+          return;
+        }
+        setBackendStatus("offline");
+      }
+    }
+
+    checkHealth();
+
     fetch(`${API_URL}/templates`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setTemplates(Array.isArray(data) ? data : []))
       .catch(() => setTemplates([]));
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -772,11 +799,15 @@ function App() {
             className={clsx(
               "rounded-xl border px-4 py-3 text-sm",
               backendStatus === "checking" && "border-neutral-200 bg-white text-neutral-600",
+              backendStatus === "waking" && "border-amber-200 bg-amber-50 text-amber-900",
               backendStatus === "offline" && "border-rose-200 bg-rose-50 text-rose-800",
             )}
             role="status"
           >
-            {backendStatus === "checking" ? t("backend.checking") : t("backend.offline")}
+            {backendStatus === "checking" && t("backend.checking")}
+            {backendStatus === "waking" && t("backend.waking")}
+            {backendStatus === "offline" &&
+              (isSplitDeployMisconfigured() ? t("backend.offlineVercel") : t("backend.offline"))}
           </div>
         )}
 

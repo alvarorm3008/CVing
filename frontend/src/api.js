@@ -1,0 +1,22 @@
+/**
+ * API base URL:
+ * - Dev: localhost:8000
+ * - Vercel (or split deploy): set VITE_API_URL to your Render/backend URL at build time
+ * - Render Docker (SERVE_FRONTEND=1): leave unset → same-origin
+ */
+function resolveApiUrl() {
+  const fromEnv = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
+  if (import.meta.env.DEV) return "http://localhost:8000";
+  return "";
+}
+
+export const API_URL = resolveApiUrl();
+
+/** True when production split-deploy (e.g. Vercel) has no backend URL baked in. */
+export function isSplitDeployMisconfigured() {
+  if (import.meta.env.DEV) return false;
+  if (API_URL) return false;
+  const host = typeof window !== "undefined" ? window.location.hostname : "";
+  return host.includes("vercel.app") || host.endsWith(".vercel.app");
+}
