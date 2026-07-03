@@ -257,7 +257,8 @@ const es = {
     online: "Backend conectado",
     offline: "Backend no disponible — ejecuta: cd backend && uvicorn main:app --reload --port 8000",
     offlineVercel:
-      "Backend no configurado en Vercel. Añade la variable VITE_API_URL con la URL de tu backend (p. ej. https://tu-app.onrender.com) en Vercel → Settings → Environment Variables y redespliega. Ver docs/DEPLOY-VERCEL.md",
+      "Backend no configurado en Vercel. Añade VITE_API_URL=https://TU-SERVICIO.onrender.com en Vercel → Settings → Environment Variables y redespliega. Las peticiones a /health en vercel.app dan 404.",
+    offlineHint: "URL de API usada: {url}",
     waking: "Despertando backend en Render (plan free)… la primera petición puede tardar hasta 60 s.",
   },
   editor: {
@@ -574,7 +575,8 @@ const en = {
     online: "Backend connected",
     offline: "Backend unavailable — run: cd backend && uvicorn main:app --reload --port 8000",
     offlineVercel:
-      "Backend not configured on Vercel. Set VITE_API_URL to your backend URL (e.g. https://your-app.onrender.com) in Vercel → Settings → Environment Variables, then redeploy. See docs/DEPLOY-VERCEL.md",
+      "Backend not configured on Vercel. Set VITE_API_URL=https://YOUR-SERVICE.onrender.com in Vercel → Settings → Environment Variables, then redeploy. Requests to /health on vercel.app return 404.",
+    offlineHint: "API URL used: {url}",
     waking: "Waking Render backend (free tier)… first request may take up to 60s.",
   },
   editor: {

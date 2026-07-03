@@ -396,6 +396,11 @@ def _run_full_application(
     )
 
 
+@app.get("/")
+def root():
+    return {"service": "CV Adapter API", "status": "ok", "health": "/health"}
+
+
 @app.get("/ai-providers")
 def get_ai_providers():
     return {

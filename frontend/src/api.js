@@ -14,6 +14,13 @@ function resolveApiUrl() {
 export const API_URL = resolveApiUrl();
 
 /** True when production split-deploy (e.g. Vercel) has no backend URL baked in. */
+export function getApiBaseForDisplay() {
+  if (API_URL) return API_URL;
+  if (import.meta.env.DEV) return "http://localhost:8000";
+  if (typeof window !== "undefined") return `${window.location.origin} (sin VITE_API_URL — mal en Vercel)`;
+  return "";
+}
+
 export function isSplitDeployMisconfigured() {
   if (import.meta.env.DEV) return false;
   if (API_URL) return false;

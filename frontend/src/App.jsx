@@ -31,7 +31,7 @@ import FlowGuide from "./FlowGuide.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
 import OfferResearchPanel from "./OfferResearchPanel.jsx";
 import PreflightPanel from "./PreflightPanel.jsx";
-import { API_URL, isSplitDeployMisconfigured } from "./api.js";
+import { API_URL, getApiBaseForDisplay, isSplitDeployMisconfigured } from "./api.js";
 import { loadDemoData } from "./demoData.js";
 import { downloadApplicationPack } from "./downloadPack.js";
 import { getFlowStep, getRecommendedAction } from "./flowUtils.js";
@@ -808,6 +808,11 @@ function App() {
             {backendStatus === "waking" && t("backend.waking")}
             {backendStatus === "offline" &&
               (isSplitDeployMisconfigured() ? t("backend.offlineVercel") : t("backend.offline"))}
+            {backendStatus === "offline" && (
+              <p className="mt-2 text-xs opacity-80">
+                {t("backend.offlineHint").replace("{url}", getApiBaseForDisplay() || "/health")}
+              </p>
+            )}
           </div>
         )}
 
