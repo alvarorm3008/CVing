@@ -31,7 +31,7 @@ import FlowGuide from "./FlowGuide.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
 import OfferResearchPanel from "./OfferResearchPanel.jsx";
 import PreflightPanel from "./PreflightPanel.jsx";
-import { API_URL, getApiBaseForDisplay, isSplitDeployMisconfigured } from "./api.js";
+import { API_URL, formatApiError, getApiBaseForDisplay, isSplitDeployMisconfigured } from "./api.js";
 import { loadDemoData } from "./demoData.js";
 import { downloadApplicationPack } from "./downloadPack.js";
 import { getFlowStep, getRecommendedAction } from "./flowUtils.js";
@@ -46,6 +46,8 @@ import {
   loadCvBase,
   loadHistory,
   saveCvBase,
+  isCvContentEmpty,
+  cvBaseSummary,
   updateHistoryEntry,
 } from "./storage.js";
 
@@ -163,6 +165,7 @@ function App() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [templateId, setTemplateId] = useState(DEFAULT_TEMPLATE_ID);
   const [templates, setTemplates] = useState([]);
+  const [cvParseWarning, setCvParseWarning] = useState("");
   const [adaptationMode, setAdaptationMode] = useState("ats-perfect");
   const fileInputRef = useRef(null);
   const preflightCacheRef = useRef("");
@@ -208,30 +211,54 @@ function App() {
   const parseAndSaveCv = useCallback(
     async (file) => {
       if (!file) return;
+      if (backendStatus === "offline") {
+        setError(t("cv.backendRequired"));
+        setCvFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
       setSavingBase(true);
       setError("");
+      setCvParseWarning("");
       const formData = new FormData();
       formData.append("cv_file", file);
       formData.append("ai_provider", AI_PROVIDER);
       try {
         const response = await fetch(`${API_URL}/parse-cv`, { method: "POST", body: formData });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || t("errors.parseFailed"));
+        let data = {};
+        try {
+          data = await response.json();
+        } catch {
+          if (!response.ok) throw new Error(t("errors.parseFailed"));
+        }
+        if (!response.ok) {
+          throw new Error(formatApiError(data.detail, t("errors.parseFailed")));
+        }
+        if (!data.cv) throw new Error(t("errors.parseFailed"));
         const saved = saveCvBase({ cv: data.cv, filename: data.filename || file.name });
         setCvBase(saved);
         setCvFile(null);
+        if (isCvContentEmpty(data.cv)) {
+          setCvParseWarning(t("cv.parseEmpty"));
+        }
         if (fileInputRef.current) fileInputRef.current.value = "";
       } catch (err) {
+        setCvFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
         setError(err.message || t("errors.saveBaseFailed"));
       } finally {
         setSavingBase(false);
       }
     },
-    [t],
+    [t, backendStatus],
   );
 
   useEffect(() => {
-    setCvBase(loadCvBase());
+    const loaded = loadCvBase();
+    setCvBase(loaded);
+    if (loaded && isCvContentEmpty(loaded.cv)) {
+      setCvParseWarning(t("cv.parseEmpty"));
+    }
     setHistory(loadHistory());
 
     let cancelled = false;
@@ -326,12 +353,21 @@ function App() {
   const acceptCvFile = (file) => {
     if (!file) return;
     const name = file.name.toLowerCase();
-    if (!name.endsWith(".pdf") && !name.endsWith(".docx")) return;
+    if (!name.endsWith(".pdf") && !name.endsWith(".docx")) {
+      setError(t("cv.invalidFormat"));
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setCvParseWarning("");
     setCvFile(file);
     setError("");
   };
 
-  const handleFileChange = (event) => acceptCvFile(event.target.files?.[0] ?? null);
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = "";
+    acceptCvFile(file);
+  };
   const handleDrop = (event) => {
     event.preventDefault();
     setDragOver(false);
@@ -341,6 +377,7 @@ function App() {
   const handleRemoveCvBase = () => {
     clearCvBase();
     setCvBase(null);
+    setCvParseWarning("");
   };
 
   const handleImportUrl = async () => {
@@ -867,6 +904,16 @@ function App() {
                   <p className="text-sm text-neutral-600">
                     {cvBase.filename} · {formatDate(cvBase.savedAt, dateLocale)}
                   </p>
+                  {cvBaseSummary(cvBase.cv) && (
+                    <p className="mt-1 text-sm font-medium text-neutral-800">
+                      {t("cv.parseSummary").replace("{summary}", cvBaseSummary(cvBase.cv))}
+                    </p>
+                  )}
+                  {cvParseWarning && (
+                    <p className="mt-2 text-xs text-amber-800" role="status">
+                      {cvParseWarning}
+                    </p>
+                  )}
                 </div>
                 <button type="button" onClick={handleRemoveCvBase} className="text-sm text-neutral-600 hover:text-rose-700">
                   {t("cv.remove")}

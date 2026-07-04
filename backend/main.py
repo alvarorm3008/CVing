@@ -474,6 +474,14 @@ async def parse_cv(
     ai_provider: str = Form("gemini"),
 ):
     cv_text = await read_cv_file(cv_file)
+    if len(cv_text.strip()) < 40:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No se pudo extraer suficiente texto del archivo. "
+                "Usa un PDF con texto seleccionable (no escaneado) o un DOCX."
+            ),
+        )
     provider = validate_ai_provider(ai_provider)
 
     try:

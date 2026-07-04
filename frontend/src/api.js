@@ -27,3 +27,15 @@ export function isSplitDeployMisconfigured() {
   const host = typeof window !== "undefined" ? window.location.hostname : "";
   return host.includes("vercel.app") || host.endsWith(".vercel.app");
 }
+
+/** Normalize FastAPI error payloads for display. */
+export function formatApiError(detail, fallback = "Request failed") {
+  if (!detail) return fallback;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => (typeof item === "object" && item?.msg ? item.msg : String(item)))
+      .join("; ");
+  }
+  return fallback;
+}

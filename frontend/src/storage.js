@@ -17,8 +17,36 @@ export function saveCvBase({ cv, filename }) {
     filename,
     savedAt: new Date().toISOString(),
   };
-  localStorage.setItem(CV_BASE_KEY, JSON.stringify(payload));
+  try {
+    localStorage.setItem(CV_BASE_KEY, JSON.stringify(payload));
+  } catch (err) {
+    const quota = err?.name === "QuotaExceededError";
+    throw new Error(
+      quota
+        ? "El CV es demasiado grande para guardarlo en el navegador. Prueba en otra ventana o borra datos del sitio."
+        : "No se pudo guardar el CV en el navegador.",
+    );
+  }
   return payload;
+}
+
+export function isCvContentEmpty(cv) {
+  if (!cv) return true;
+  const name = cv.contact?.full_name?.trim();
+  const summary = cv.summary?.trim();
+  const hasExperience = Array.isArray(cv.experience) && cv.experience.some((e) => e.role || e.company);
+  const hasSkills = Array.isArray(cv.skills) && cv.skills.length > 0;
+  return !name && !summary && !hasExperience && !hasSkills;
+}
+
+export function cvBaseSummary(cv) {
+  if (!cv) return "";
+  const name = cv.contact?.full_name?.trim() || cv.contact?.headline?.trim();
+  const expCount = Array.isArray(cv.experience) ? cv.experience.length : 0;
+  if (name && expCount > 0) return `${name} · ${expCount} exp.`;
+  if (name) return name;
+  if (expCount > 0) return `${expCount} experiencias`;
+  return "";
 }
 
 export function clearCvBase() {
