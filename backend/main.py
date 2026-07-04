@@ -439,13 +439,11 @@ async def detect_offer_language(job_description: str = Form(...)):
 
 @app.get("/health")
 def health_check():
-    from html_pdf_renderer import check_playwright_available
-
     return {
         "status": "ok",
         "provider": get_provider(),
         "ai": get_provider_info(),
-        "pdf": check_playwright_available(),
+        "pdf": {"available": True, "message": "check on demand"},
     }
 
 

@@ -31,7 +31,7 @@ import FlowGuide from "./FlowGuide.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
 import OfferResearchPanel from "./OfferResearchPanel.jsx";
 import PreflightPanel from "./PreflightPanel.jsx";
-import { API_URL, formatApiError, getApiBaseForDisplay, isSplitDeployMisconfigured } from "./api.js";
+import { API_URL, fetchWithRetry, formatApiError, getApiBaseForDisplay, isApiConfigured, isSplitDeployMisconfigured, verifyBackendHealth } from "./api.js";
 import { loadDemoData } from "./demoData.js";
 import { downloadApplicationPack } from "./downloadPack.js";
 import { getFlowStep, getRecommendedAction } from "./flowUtils.js";
@@ -211,6 +211,12 @@ function App() {
   const parseAndSaveCv = useCallback(
     async (file) => {
       if (!file) return;
+      if (!isApiConfigured()) {
+        setError(isSplitDeployMisconfigured() ? t("backend.offlineVercel") : t("cv.backendRequired"));
+        setCvFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
       if (backendStatus === "offline") {
         setError(t("cv.backendRequired"));
         setCvFile(null);
@@ -224,7 +230,7 @@ function App() {
       formData.append("cv_file", file);
       formData.append("ai_provider", AI_PROVIDER);
       try {
-        const response = await fetch(`${API_URL}/parse-cv`, { method: "POST", body: formData });
+        const response = await fetchWithRetry(`${API_URL}/parse-cv`, { method: "POST", body: formData });
         let data = {};
         try {
           data = await response.json();
@@ -232,6 +238,9 @@ function App() {
           if (!response.ok) throw new Error(t("errors.parseFailed"));
         }
         if (!response.ok) {
+          if (response.status === 405 && !isApiConfigured()) {
+            throw new Error(t("backend.offlineVercel"));
+          }
           throw new Error(formatApiError(data.detail, t("errors.parseFailed")));
         }
         if (!data.cv) throw new Error(t("errors.parseFailed"));
@@ -253,6 +262,31 @@ function App() {
     [t, backendStatus],
   );
 
+  const checkBackendHealth = useCallback(async (attempt = 0) => {
+    if (!isApiConfigured()) {
+      setBackendStatus("offline");
+      return false;
+    }
+    if (attempt === 0) setBackendStatus("checking");
+    else setBackendStatus("waking");
+
+    try {
+      const res = await fetchWithRetry(
+        `${API_URL}/health`,
+        { signal: AbortSignal.timeout(90000) },
+        { attempts: 8, delayMs: 4000 },
+      );
+      if (!res.ok) throw new Error("health failed");
+      const healthy = await verifyBackendHealth(res);
+      if (!healthy) throw new Error("not api");
+      setBackendStatus("online");
+      return true;
+    } catch {
+      setBackendStatus("offline");
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     const loaded = loadCvBase();
     setCvBase(loaded);
@@ -261,41 +295,13 @@ function App() {
     }
     setHistory(loadHistory());
 
-    let cancelled = false;
+    checkBackendHealth();
 
-    async function checkHealth(attempt = 0) {
-      if (cancelled) return;
-      if (attempt === 0) setBackendStatus("checking");
-      else setBackendStatus("waking");
-
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 65000);
-        const res = await fetch(`${API_URL}/health`, { signal: controller.signal });
-        clearTimeout(timeout);
-        if (!res.ok) throw new Error("health failed");
-        if (!cancelled) setBackendStatus("online");
-      } catch {
-        if (cancelled) return;
-        if (attempt < 2 && API_URL) {
-          setTimeout(() => checkHealth(attempt + 1), 2000);
-          return;
-        }
-        setBackendStatus("offline");
-      }
-    }
-
-    checkHealth();
-
-    fetch(`${API_URL}/templates`)
+    fetchWithRetry(`${API_URL}/templates`, {}, { attempts: 4, delayMs: 3000 })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setTemplates(Array.isArray(data) ? data : []))
       .catch(() => setTemplates([]));
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [checkBackendHealth, t]);
 
   useEffect(() => {
     if (cvFile) parseAndSaveCv(cvFile);
@@ -849,6 +855,21 @@ function App() {
               <p className="mt-2 text-xs opacity-80">
                 {t("backend.offlineHint").replace("{url}", getApiBaseForDisplay() || "/health")}
               </p>
+            )}
+            {backendStatus === "offline" && isApiConfigured() && (
+              <button
+                type="button"
+                onClick={() => checkBackendHealth()}
+                className="mt-3 rounded-lg border border-current px-3 py-1.5 text-xs font-semibold hover:opacity-80"
+              >
+                {t("backend.retry")}
+              </button>
+            )}
+            {backendStatus === "waking" && (
+              <p className="mt-2 text-xs opacity-80">{t("backend.wakingDetail")}</p>
+            )}
+            {(backendStatus === "offline" || backendStatus === "waking") && isApiConfigured() && (
+              <p className="mt-2 text-xs opacity-70">{t("backend.renderFreeHint")}</p>
             )}
           </div>
         )}

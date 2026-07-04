@@ -261,9 +261,13 @@ const es = {
     online: "Backend conectado",
     offline: "Backend no disponible — ejecuta: cd backend && uvicorn main:app --reload --port 8000",
     offlineVercel:
-      "Backend no configurado en Vercel. Añade VITE_API_URL=https://TU-SERVICIO.onrender.com en Vercel → Settings → Environment Variables y redespliega. Las peticiones a /health en vercel.app dan 404.",
+      "Backend no configurado. En Vercel añade VITE_API_URL=https://cving.onrender.com (Settings → Environment Variables) y redespliega. Sin eso, POST /parse-cv devuelve 405.",
     offlineHint: "URL de API usada: {url}",
-    waking: "Despertando backend en Render (plan free)… la primera petición puede tardar hasta 60 s.",
+    waking: "Despertando backend en Render… puede tardar hasta 90 s (plan free).",
+    wakingDetail: "Render apaga el servidor tras 15 min sin uso. La primera petición es lenta; no cierres la pestaña.",
+    retry: "Reintentar conexión",
+    renderFreeHint:
+      "Render gratis es inestable (cold start, 502). Para uso diario: local con npm run dev. Para producción fiable: plan Starter en Render (~7 €/mes) o despliega en tu VPS.",
   },
   editor: {
     hint: "Edita antes de descargar. Pulsa «Actualizar PDF» para aplicar los cambios.",
@@ -583,9 +587,13 @@ const en = {
     online: "Backend connected",
     offline: "Backend unavailable — run: cd backend && uvicorn main:app --reload --port 8000",
     offlineVercel:
-      "Backend not configured on Vercel. Set VITE_API_URL=https://YOUR-SERVICE.onrender.com in Vercel → Settings → Environment Variables, then redeploy. Requests to /health on vercel.app return 404.",
+      "Backend not configured. On Vercel set VITE_API_URL=https://cving.onrender.com (Settings → Environment Variables) and redeploy. Without it, POST /parse-cv returns 405.",
     offlineHint: "API URL used: {url}",
-    waking: "Waking Render backend (free tier)… first request may take up to 60s.",
+    waking: "Waking Render backend… may take up to 90s (free tier).",
+    wakingDetail: "Render sleeps after 15 min idle. First request is slow; keep this tab open.",
+    retry: "Retry connection",
+    renderFreeHint:
+      "Render free tier is unreliable (cold start, 502). For daily use: run locally with npm run dev. For reliable production: Render Starter (~$7/mo) or your own VPS.",
   },
   editor: {
     hint: "Edit before downloading. Click «Update PDF» to apply changes.",

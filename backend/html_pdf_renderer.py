@@ -50,6 +50,16 @@ def check_playwright_available() -> dict:
         }
 
 
+def check_playwright_installed() -> dict:
+    """Lightweight probe for /health — does not launch Chromium (Render pings this often)."""
+    try:
+        import playwright  # noqa: F401
+
+        return {"available": True, "message": "Playwright instalado"}
+    except ImportError:
+        return {"available": False, "message": "Playwright no instalado"}
+
+
 def _split_experience(cv: StructuredCV) -> list[dict]:
     jobs: list[dict] = []
 
