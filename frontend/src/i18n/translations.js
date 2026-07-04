@@ -268,6 +268,8 @@ const es = {
     retry: "Reintentar conexión",
     renderFreeHint:
       "Render gratis es inestable (cold start, 502). Para uso diario: local con npm run dev. Para producción fiable: plan Starter en Render (~7 €/mes) o despliega en tu VPS.",
+    render503:
+      "Render no responde (503). Espera ~60 s sin recargar y pulsa «Reintentar conexión», o usa la app en local (npm run dev + uvicorn). El error de CORS en consola es normal cuando Render está caído.",
   },
   editor: {
     hint: "Edita antes de descargar. Pulsa «Actualizar PDF» para aplicar los cambios.",
@@ -594,6 +596,8 @@ const en = {
     retry: "Retry connection",
     renderFreeHint:
       "Render free tier is unreliable (cold start, 502). For daily use: run locally with npm run dev. For reliable production: Render Starter (~$7/mo) or your own VPS.",
+    render503:
+      "Render is not responding (503). Wait ~60s without reloading and tap «Retry connection», or run locally (npm run dev + uvicorn). CORS errors in the console are normal when Render is down.",
   },
   editor: {
     hint: "Edit before downloading. Click «Update PDF» to apply changes.",

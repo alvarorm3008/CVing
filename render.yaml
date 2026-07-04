@@ -15,5 +15,7 @@ services:
         value: "0"
       - key: GEMINI_API_KEY
         sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://c-ving.vercel.app
       - key: DEFAULT_GITHUB_USERNAME
         sync: false

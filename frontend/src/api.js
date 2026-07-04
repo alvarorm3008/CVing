@@ -56,19 +56,33 @@ export async function verifyBackendHealth(response) {
 
 const RETRYABLE_STATUS = new Set([502, 503, 504]);
 
-/** Retry fetch while Render free tier wakes up (cold start). */
+/** Wake Render (GET /health with retries). Call before heavy POSTs. */
+export async function wakeBackend({ attempts = 10, delayMs = 5000 } = {}) {
+  if (!isApiConfigured()) return false;
+  const res = await fetchWithRetry(
+    `${API_URL}/health`,
+    { method: "GET" },
+    { attempts, delayMs },
+  );
+  if (!res.ok) return false;
+  return verifyBackendHealth(res);
+}
+
+/** Retry fetch while Render free tier wakes up (cold start). GET only — avoid hammering POST. */
 export async function fetchWithRetry(url, options = {}, { attempts = 6, delayMs = 5000 } = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  const maxAttempts = method === "GET" || method === "HEAD" ? attempts : 1;
   let lastError;
-  for (let i = 0; i < attempts; i += 1) {
+  for (let i = 0; i < maxAttempts; i += 1) {
     try {
       const response = await fetch(url, options);
-      if (response.ok || !RETRYABLE_STATUS.has(response.status) || i === attempts - 1) {
+      if (response.ok || !RETRYABLE_STATUS.has(response.status) || i === maxAttempts - 1) {
         return response;
       }
       lastError = new Error(`HTTP ${response.status}`);
     } catch (err) {
       lastError = err;
-      if (i === attempts - 1) throw err;
+      if (i === maxAttempts - 1) throw err;
     }
     await new Promise((r) => setTimeout(r, delayMs));
   }

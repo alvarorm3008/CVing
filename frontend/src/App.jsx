@@ -31,7 +31,7 @@ import FlowGuide from "./FlowGuide.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
 import OfferResearchPanel from "./OfferResearchPanel.jsx";
 import PreflightPanel from "./PreflightPanel.jsx";
-import { API_URL, fetchWithRetry, formatApiError, getApiBaseForDisplay, isApiConfigured, isSplitDeployMisconfigured, verifyBackendHealth } from "./api.js";
+import { API_URL, fetchWithRetry, formatApiError, getApiBaseForDisplay, isApiConfigured, isSplitDeployMisconfigured, verifyBackendHealth, wakeBackend } from "./api.js";
 import { loadDemoData } from "./demoData.js";
 import { downloadApplicationPack } from "./downloadPack.js";
 import { getFlowStep, getRecommendedAction } from "./flowUtils.js";
@@ -169,6 +169,7 @@ function App() {
   const [adaptationMode, setAdaptationMode] = useState("ats-perfect");
   const fileInputRef = useRef(null);
   const preflightCacheRef = useRef("");
+  const parseInFlightRef = useRef(false);
 
   const hasCvSource = Boolean(cvFile || cvBase || cvData);
   const dateLocale = DATE_LOCALE_MAP[locale] || "es-ES";
@@ -210,27 +211,27 @@ function App() {
 
   const parseAndSaveCv = useCallback(
     async (file) => {
-      if (!file) return;
+      if (!file || parseInFlightRef.current) return;
       if (!isApiConfigured()) {
         setError(isSplitDeployMisconfigured() ? t("backend.offlineVercel") : t("cv.backendRequired"));
         setCvFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
-      if (backendStatus === "offline") {
-        setError(t("cv.backendRequired"));
-        setCvFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        return;
-      }
+      parseInFlightRef.current = true;
       setSavingBase(true);
       setError("");
       setCvParseWarning("");
+      setBackendStatus("waking");
       const formData = new FormData();
       formData.append("cv_file", file);
       formData.append("ai_provider", AI_PROVIDER);
       try {
-        const response = await fetchWithRetry(`${API_URL}/parse-cv`, { method: "POST", body: formData });
+        const awake = await wakeBackend({ attempts: 12, delayMs: 5000 });
+        if (!awake) throw new Error(t("backend.render503"));
+        setBackendStatus("online");
+
+        const response = await fetch(`${API_URL}/parse-cv`, { method: "POST", body: formData });
         let data = {};
         try {
           data = await response.json();
@@ -238,6 +239,9 @@ function App() {
           if (!response.ok) throw new Error(t("errors.parseFailed"));
         }
         if (!response.ok) {
+          if (response.status === 503 || response.status === 502) {
+            throw new Error(t("backend.render503"));
+          }
           if (response.status === 405 && !isApiConfigured()) {
             throw new Error(t("backend.offlineVercel"));
           }
@@ -254,12 +258,15 @@ function App() {
       } catch (err) {
         setCvFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
-        setError(err.message || t("errors.saveBaseFailed"));
+        const msg = err.message || t("errors.saveBaseFailed");
+        setError(msg.includes("CORS") || msg.includes("Failed to fetch") ? t("backend.render503") : msg);
+        setBackendStatus("offline");
       } finally {
+        parseInFlightRef.current = false;
         setSavingBase(false);
       }
     },
-    [t, backendStatus],
+    [t],
   );
 
   const checkBackendHealth = useCallback(async (attempt = 0) => {
