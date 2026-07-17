@@ -16,6 +16,6 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: ALLOWED_ORIGINS
-        value: https://c-ving.vercel.app
+        value: https://cvingapi.alvarorodriguez.dev
       - key: DEFAULT_GITHUB_USERNAME
         sync: false

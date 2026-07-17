@@ -46,10 +46,13 @@ from pypdf import PdfReader
 
 load_dotenv()
 
-_default_origins = "http://localhost:5173,http://127.0.0.1:5173,https://c-ving.vercel.app"
+_default_origins = (
+    "http://localhost:5173,http://127.0.0.1:5173,"
+    "https://c-ving.vercel.app,https://cvingapi.alvarorodriguez.dev"
+)
 _allowed_origins = [
     origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",")
+    for origin in os.getenv("ALLOWED_ORIGINS", "".join(_default_origins)).split(",")
     if origin.strip()
 ]
 

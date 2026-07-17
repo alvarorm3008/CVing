@@ -1,4 +1,5 @@
-# API-only image for Render when the frontend is hosted on Vercel (faster builds, no static assets).
+# API-only image for Railway/Render when the frontend is on Vercel.
+# Build context = repo root (not /backend). Chromium comes with the base image.
 FROM mcr.microsoft.com/playwright/python:v1.49.1-jammy
 
 WORKDIR /app
@@ -12,4 +13,5 @@ ENV PORT=8000
 ENV SERVE_FRONTEND=0
 EXPOSE 8000
 
+# Railway injects PORT; shell form expands ${PORT}
 CMD uvicorn main:app --host 0.0.0.0 --port ${PORT}

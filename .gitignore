@@ -6,8 +6,13 @@ __pycache__/
 venv/
 env/
 
-# Environment
+# Environment (never commit real secrets)
 .env
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+*.pem
 
 # Build / test artifacts
 frontend/dist/
