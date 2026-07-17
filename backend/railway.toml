@@ -1,5 +1,9 @@
 # Railway service Root Directory = /backend
 # Builder: Docker → Dockerfile in this folder (Playwright + Chromium)
+#
+# IMPORTANT: leave Start Command EMPTY in Railway Settings → Deploy.
+# A custom start command like `uvicorn ... --port $PORT` runs without a shell
+# and crashes with: Invalid value for '--port': '$PORT'
 
 [build]
 builder = "DOCKERFILE"

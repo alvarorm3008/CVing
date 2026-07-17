@@ -13,5 +13,6 @@ ENV PORT=8000
 ENV SERVE_FRONTEND=0
 EXPOSE 8000
 
-# Railway injects PORT
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT}
+# Must use a shell so ${PORT} expands. Do NOT set a Start Command in Railway
+# dashboard — it overrides this and passes "$PORT" as a literal string.
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

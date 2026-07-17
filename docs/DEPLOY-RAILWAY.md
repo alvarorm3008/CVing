@@ -9,7 +9,9 @@
 
 1. Service → **Root Directory** = `backend`
 2. Builder: Docker (uses `backend/railway.toml` → `backend/Dockerfile`)
-3. Variables:
+3. **Settings → Deploy → Start Command: leave EMPTY**  
+   (if you set `uvicorn ... --port $PORT`, Railway runs it without a shell and `$PORT` stays literal → crash → healthcheck fails)
+4. Variables:
 
 ```
 AI_PROVIDER=gemini
