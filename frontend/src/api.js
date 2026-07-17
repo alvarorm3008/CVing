@@ -1,12 +1,15 @@
 /**
  * API base URL:
  * - Dev: localhost:8000
- * - Vercel (or split deploy): set VITE_API_URL to your Render/backend URL at build time
- * - Render Docker (SERVE_FRONTEND=1): leave unset → same-origin
+ * - Vercel: set VITE_API_URL to Railway API URL at build time (e.g. https://api.alvarorodriguez.dev)
  */
 function resolveApiUrl() {
-  const fromEnv = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
-  if (fromEnv) return fromEnv;
+  let fromEnv = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
+  if (fromEnv) {
+    // Browsers reject schemes like "Https://" — normalize
+    fromEnv = fromEnv.replace(/^https?:\/\//i, (m) => m.toLowerCase());
+    return fromEnv;
+  }
   if (import.meta.env.DEV) return "http://localhost:8000";
   return "";
 }

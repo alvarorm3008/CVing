@@ -259,17 +259,17 @@ const es = {
   backend: {
     checking: "Comprobando conexión con el backend…",
     online: "Backend conectado",
-    offline: "Backend no disponible — ejecuta: cd backend && uvicorn main:app --reload --port 8000",
+    offline: "Backend no disponible. Si estás en local: cd backend && uvicorn main:app --reload --port 8000",
     offlineVercel:
-      "Backend no configurado. En Vercel añade VITE_API_URL=https://cving.onrender.com (Settings → Environment Variables) y redespliega. Sin eso, POST /parse-cv devuelve 405.",
+      "Backend no configurado. En Vercel: VITE_API_URL=https://api.alvarorodriguez.dev (minúsculas) → Redeploy.",
     offlineHint: "URL de API usada: {url}",
-    waking: "Despertando backend en Render… puede tardar hasta 90 s (plan free).",
-    wakingDetail: "Render apaga el servidor tras 15 min sin uso. La primera petición es lenta; no cierres la pestaña.",
+    waking: "Conectando con el backend…",
+    wakingDetail: "Espera unos segundos. Si falla, revisa que api.alvarorodriguez.dev/health responda.",
     retry: "Reintentar conexión",
     renderFreeHint:
-      "Render gratis es inestable (cold start, 502). Para uso diario: local con npm run dev. Para producción fiable: plan Starter en Render (~7 €/mes) o despliega en tu VPS.",
+      "Si ves este aviso en producción: 1) VITE_API_URL=https://api.alvarorodriguez.dev (sin H mayúscula) + Redeploy en Vercel. 2) En Railway, ALLOWED_ORIGINS=https://cvingapi.alvarorodriguez.dev y redeploy.",
     render503:
-      "Render no responde (503). Espera ~60 s sin recargar y pulsa «Reintentar conexión», o usa la app en local (npm run dev + uvicorn). El error de CORS en consola es normal cuando Render está caído.",
+      "El API no responde (503/CORS). Comprueba https://api.alvarorodriguez.dev/health y que CORS permita tu dominio de Vercel.",
   },
   editor: {
     hint: "Edita antes de descargar. Pulsa «Actualizar PDF» para aplicar los cambios.",
@@ -587,17 +587,17 @@ const en = {
   backend: {
     checking: "Checking backend connection…",
     online: "Backend connected",
-    offline: "Backend unavailable — run: cd backend && uvicorn main:app --reload --port 8000",
+    offline: "Backend unavailable. Locally run: cd backend && uvicorn main:app --reload --port 8000",
     offlineVercel:
-      "Backend not configured. On Vercel set VITE_API_URL=https://cving.onrender.com (Settings → Environment Variables) and redeploy. Without it, POST /parse-cv returns 405.",
+      "Backend not configured. On Vercel set VITE_API_URL=https://api.alvarorodriguez.dev (lowercase) then Redeploy.",
     offlineHint: "API URL used: {url}",
-    waking: "Waking Render backend… may take up to 90s (free tier).",
-    wakingDetail: "Render sleeps after 15 min idle. First request is slow; keep this tab open.",
+    waking: "Connecting to backend…",
+    wakingDetail: "Wait a few seconds. If it fails, check api.alvarorodriguez.dev/health.",
     retry: "Retry connection",
     renderFreeHint:
-      "Render free tier is unreliable (cold start, 502). For daily use: run locally with npm run dev. For reliable production: Render Starter (~$7/mo) or your own VPS.",
+      "In production: 1) VITE_API_URL=https://api.alvarorodriguez.dev (lowercase H) + Vercel Redeploy. 2) Railway ALLOWED_ORIGINS=https://cvingapi.alvarorodriguez.dev + redeploy.",
     render503:
-      "Render is not responding (503). Wait ~60s without reloading and tap «Retry connection», or run locally (npm run dev + uvicorn). CORS errors in the console are normal when Render is down.",
+      "API not responding (503/CORS). Check https://api.alvarorodriguez.dev/health and CORS for your frontend domain.",
   },
   editor: {
     hint: "Edit before downloading. Click «Update PDF» to apply changes.",

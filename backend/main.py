@@ -47,21 +47,29 @@ from pypdf import PdfReader
 load_dotenv()
 
 _default_origins = (
-    "http://localhost:5173,http://127.0.0.1:5173,"
-    "https://c-ving.vercel.app,https://cvingapi.alvarorodriguez.dev"
+    "http://localhost:5173,"
+    "http://127.0.0.1:5173,"
+    "https://c-ving.vercel.app,"
+    "https://cvingapi.alvarorodriguez.dev"
 )
-_allowed_origins = [
-    origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", "".join(_default_origins)).split(",")
-    if origin.strip()
-]
+# Merge env + defaults so Railway ALLOWED_ORIGINS does not drop the custom domain
+_allowed_origins = []
+_seen = set()
+for origin in (
+    "".join(_default_origins).split(",")
+    + os.getenv("ALLOWED_ORIGINS", "").split(",")
+):
+    cleaned = origin.strip().rstrip("/")
+    if cleaned and cleaned not in _seen:
+        _seen.add(cleaned)
+        _allowed_origins.append(cleaned)
 
 app = FastAPI(title="CV Adapter API")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://(.*\.)?(vercel\.app|alvarorodriguez\.dev)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
