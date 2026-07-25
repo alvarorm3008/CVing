@@ -1,5 +1,6 @@
 from cv_schema import StructuredCV, parse_json_model
 from ai_client import call_ai
+from contact_fill import fill_missing_contact
 from language_utils import detect_language_hint, parse_language_instruction
 from link_utils import enrich_cv_links
 
@@ -68,4 +69,5 @@ def parse_cv_text(cv_text: str) -> StructuredCV:
     if not (result.document_language or "").strip():
         result.document_language = detect_language_hint(cv_text) or "es"
 
-    return enrich_cv_links(result, cv_text)
+    result = enrich_cv_links(result, cv_text)
+    return fill_missing_contact(result, cv_text)

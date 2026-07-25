@@ -1,6 +1,5 @@
 import base64
 import os
-from io import BytesIO
 from pathlib import Path
 from typing import Optional
 
@@ -41,8 +40,8 @@ from ats_cv_generator import generate_cv_txt
 from pdf_renderer import render_cv_pdf
 from job_fetcher import fetch_job_offer_text
 from language_utils import SUPPORTED_LANGUAGES, detect_language_hint, language_name, validate_output_language
+from pdf_extractor import extract_text_from_pdf
 from pydantic import BaseModel, Field
-from pypdf import PdfReader
 
 load_dotenv()
 
@@ -160,37 +159,6 @@ class GenerateATS_CVRequest(BaseModel):
 
 class GenerateATS_TXTRequest(GenerateATS_CVRequest):
     pass
-
-
-def extract_text_from_pdf(file_bytes: bytes) -> str:
-    if not file_bytes.startswith(b"%PDF"):
-        raise HTTPException(status_code=400, detail="The uploaded file is not a valid PDF.")
-
-    try:
-        reader = PdfReader(BytesIO(file_bytes))
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail="Could not read the PDF file.") from exc
-
-    if len(reader.pages) == 0:
-        raise HTTPException(status_code=400, detail="The PDF file has no pages.")
-
-    parts = []
-    for page in reader.pages:
-        text = page.extract_text()
-        if text:
-            parts.append(text.strip())
-
-    extracted = "\n\n".join(parts).strip()
-    if not extracted:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Could not extract text from the PDF. "
-                "Make sure it is a text-based PDF, not a scanned image."
-            ),
-        )
-
-    return extracted
 
 
 def _is_docx(filename: str, content_type: str | None) -> bool:
