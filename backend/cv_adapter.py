@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from ai_client import call_ai
-from cv_schema import ExperienceItem, StructuredCV, parse_json_model
+from cv_schema import EducationItem, ExperienceItem, StructuredCV, parse_json_model
 from link_utils import enrich_cv_links
 from cv_pdf_prep import (
     PDF_CV_RULES,
@@ -11,8 +11,10 @@ from cv_pdf_prep import (
     sync_headline,
 )
 from language_utils import (
+    language_name,
     output_language_instruction,
     resolve_adaptation_settings,
+    sanitize_cv_language_fields,
     translation_instruction,
 )
 
@@ -24,6 +26,7 @@ STEP 1 — Inventory all evidence in the CV.
 STEP 2 — Extract must-have and nice-to-have from the job.
 STEP 3 — Map each requirement: COVERED | PARTIAL | MISSING.
 STEP 4 — Adapt summary, skills, bullets using ONLY COVERED and PARTIAL (honest CV, not optimized to fool ATS).
+When translating to the job language: also translate education, certifications and spoken languages (not company/school proper nouns).
 
 PRESERVE all contact fields (linkedin, github, website, headline, email, phone) and URLs in bullets exactly — never remove GitHub/LinkedIn links.
 """ + PDF_CV_RULES + """
@@ -40,6 +43,9 @@ Return ONLY valid JSON:
   "summary": "",
   "skills": ["only evidenced skills, job-relevant order"],
   "experience": [{"role": "", "company": "", "location": "", "period": "", "bullets": []}],
+  "education": [{"degree": "", "school": "", "period": ""}],
+  "certifications": [],
+  "languages": [],
   "honest_ats_score": 65,
   "potential_ats_score": 88,
   "apply_recommendation": "apply_now|apply_after_learning|not_recommended",
@@ -68,6 +74,7 @@ Maximize ATS aggressively:
 - Pack skills with job keywords first (defensible links only)
 - Rewrite bullets with maximum job keywords
 - Target honest_ats_score 85-95
+- When translating: also rewrite education degrees, certifications and spoken-language lines into the output language (keep school/company names)
 
 ALWAYS fill must_have_missing with job requirements still not evidenced in the CV.
 ALWAYS fill cv_improvements with 3-6 actionable edits the candidate can still make (e.g. "Add keyword X to skills", "Rephrase bullet at Company Y with metric Z").
@@ -82,6 +89,9 @@ Return ONLY valid JSON:
   "summary": "",
   "skills": ["job keywords first, 18-30 items"],
   "experience": [{"role": "", "company": "", "location": "", "period": "", "bullets": []}],
+  "education": [{"degree": "", "school": "", "period": ""}],
+  "certifications": ["cert in output language"],
+  "languages": ["Language: level in output language"],
   "honest_ats_score": 88,
   "potential_ats_score": 92,
   "apply_recommendation": "send_cv",
@@ -94,7 +104,7 @@ Return ONLY valid JSON:
   "optimization_notes": "Short status summary."
 }
 
-Use empty strings "" not null.
+Use empty strings "" not null. education/certifications/languages MUST be filled when translation is required; otherwise you may omit or keep source wording.
 """
 
 ATS_BOOST_PROMPT = """You are an ATS re-optimization specialist. The first pass scored below target.
@@ -115,6 +125,9 @@ Return ONLY valid JSON (same schema as ATS perfect mode):
   "summary": "",
   "skills": [],
   "experience": [{"role": "", "company": "", "location": "", "period": "", "bullets": []}],
+  "education": [{"degree": "", "school": "", "period": ""}],
+  "certifications": [],
+  "languages": [],
   "honest_ats_score": 90,
   "potential_ats_score": 93,
   "apply_recommendation": "send_cv",
@@ -157,6 +170,9 @@ class AdaptedCVSections(BaseModel):
     summary: str
     skills: list[str] = Field(default_factory=list)
     experience: list[ExperienceItem] = Field(default_factory=list)
+    education: list[EducationItem] = Field(default_factory=list)
+    certifications: list[str] = Field(default_factory=list)
+    languages: list[str] = Field(default_factory=list)
     honest_ats_score: int = 0
     potential_ats_score: int = 0
     apply_recommendation: str = ""
@@ -195,6 +211,15 @@ def adapt_cv_sections(
         f"Job Description:\n{job_description}\n\n"
         f"Structured CV JSON (source of truth):\n{cv.model_dump_json()}"
     )
+    if translate_content:
+        name = language_name(resolved_lang)
+        user_message += (
+            f"\n\nFULL TRANSLATION REQUIRED into {name} ({resolved_lang}): "
+            "summary, skills, experience roles/bullets, education degrees, "
+            "certifications AND spoken languages. "
+            "Return education, certifications and languages arrays filled in the target language. "
+            "ONE language only — no bilingual duplicates."
+        )
     if previous_adaptation is not None:
         user_message += (
             f"\n\nFirst-pass adaptation (improve this):\n"
@@ -289,7 +314,23 @@ def apply_adaptations(
     else:
         updated.experience = list(cv.experience)
 
+    if adapted.education:
+        updated.education = [
+            EducationItem(
+                degree=item.degree.strip(),
+                school=item.school.strip(),
+                period=item.period.strip(),
+            )
+            for item in adapted.education
+            if (item.degree or "").strip() or (item.school or "").strip()
+        ]
+    if adapted.certifications:
+        updated.certifications = [c.strip() for c in adapted.certifications if c.strip()]
+    if adapted.languages:
+        updated.languages = [lang.strip() for lang in adapted.languages if lang.strip()]
+
     updated.document_language = resolved_lang
+    updated = sanitize_cv_language_fields(updated)
 
     enrich_cv_links(updated)
     return prepare_cv_for_pdf(updated, target_role=adapted.target_role, truncate=True)

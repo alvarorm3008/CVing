@@ -13,7 +13,8 @@ const I18nContext = createContext({
 export function I18nProvider({ children }) {
   const [locale, setLocaleState] = useState(() => {
     try {
-      return localStorage.getItem(STORAGE_KEY) || "es";
+      const saved = localStorage.getItem(STORAGE_KEY) || "es";
+      return saved === "en" ? "en" : "es";
     } catch {
       return "es";
     }
@@ -29,7 +30,7 @@ export function I18nProvider({ children }) {
   }, [locale]);
 
   const setLocale = useCallback((code) => {
-    setLocaleState(code);
+    setLocaleState(code === "en" ? "en" : "es");
   }, []);
 
   const t = useCallback(
@@ -37,6 +38,8 @@ export function I18nProvider({ children }) {
       const pack = translations[locale] || translations.es;
       const value = getNested(pack, key);
       if (value !== undefined && value !== null) return value;
+      const enValue = getNested(translations.en, key);
+      if (enValue !== undefined && enValue !== null) return enValue;
       const esValue = getNested(translations.es, key);
       return esValue ?? fallback;
     },

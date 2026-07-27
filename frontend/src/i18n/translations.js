@@ -1,11 +1,6 @@
 export const UI_LANGUAGES = [
   { id: "es", label: "Español" },
   { id: "en", label: "English" },
-  { id: "fr", label: "Français" },
-  { id: "de", label: "Deutsch" },
-  { id: "pt", label: "Português" },
-  { id: "it", label: "Italiano" },
-  { id: "ca", label: "Català" },
 ];
 
 const es = {
@@ -53,11 +48,11 @@ const es = {
   language: {
     outputLabel: "Idioma del CV / carta",
     auto: "Auto (CV + oferta)",
-    hint: "Auto detecta el idioma del PDF y de la oferta. El parser conserva el idioma original.",
+    hint: "La oferta manda: el CV se traduce entero (incluido educación e idiomas) al idioma de la oferta.",
     detected: "Idioma detectado en CV:",
     translate: "Traducir CV al idioma de la oferta",
     translateHint:
-      "Traduce todo el CV al idioma de la oferta (una sola versión, sin duplicar en dos idiomas).",
+      "Automático: si la oferta está en otro idioma, se traduce TODO el CV a ese idioma (sin duplicar ES/EN).",
   },
   ai: {
     providerLabel: "Motor de IA",
@@ -382,11 +377,11 @@ const en = {
   language: {
     outputLabel: "CV / letter language",
     auto: "Auto (CV + job)",
-    hint: "Auto detects PDF and job language. Parser keeps the original CV language.",
+    hint: "Job offer wins: the full CV (including education and languages) is translated to the offer language.",
     detected: "Detected CV language:",
     translate: "Translate CV to job language",
     translateHint:
-      "Translate the full CV to the job language (single version, no bilingual duplicates).",
+      "Automatic: if the offer is in another language, the whole CV is translated (no bilingual duplicates).",
   },
   ai: {
     providerLabel: "AI engine",
@@ -665,8 +660,8 @@ const en = {
   },
 };
 
-// Fallback to Spanish for fr/de/pt/it/ca until fully translated
-const fr = { ...es, app: { ...es.app, badge: "CV Adapter · Phase 2", title: "Adaptez votre CV avec style", uiLanguage: "Langue de l'interface" } };
+// Partial packs kept for CV section labels / future UI; interface selector is es|en only.
+const fr = { ...es, app: { ...es.app, badge: "CVing", title: "Adaptez votre CV avec style", uiLanguage: "Langue de l'interface" } };
 const de = { ...es, app: { ...es.app, title: "Passen Sie Ihren Lebenslauf an", uiLanguage: "Oberflächensprache" } };
 
 export const translations = { es, en, fr, de, pt: es, it: es, ca: es };

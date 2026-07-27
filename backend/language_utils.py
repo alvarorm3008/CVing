@@ -30,84 +30,98 @@ UI_LANGUAGES: dict[str, str] = {
 }
 
 LANGUAGE_MARKERS: dict[str, tuple[str, ...]] = {
+    # Distinctive phrases only — avoid shared particles (de/el/the/and) that confuse es/en/pt/ca
     "es": (
-        "experiencia",
-        "educación",
+        "experiencia profesional",
         "formación",
         "habilidades",
-        "idiomas",
+        "requisitos",
+        "responsabilidades",
+        "buscamos",
+        "desarrollador",
+        "ingeniero",
+        "contratación",
+        "jornada",
+        "años de experiencia",
+        "puesto",
+        "empresa",
+        "currículum",
         "objetivo profesional",
-        "presentación",
-        " currículum",
-        "el ",
-        " de ",
-        " para ",
-        " con ",
+        "conocimientos",
+        "se valorará",
+        "indispensable",
     ),
     "en": (
-        "experience",
-        "education",
-        "skills",
-        "summary",
-        "languages",
-        "professional objective",
-        "resume",
+        "professional experience",
+        "responsibilities",
+        "requirements",
+        "we are looking",
+        "software engineer",
+        "full-time",
+        "part-time",
+        "years of experience",
+        "bachelor",
+        "job description",
+        "about the role",
+        "what you'll do",
+        "what we offer",
+        "must have",
+        "nice to have",
         "curriculum vitae",
-        " the ",
-        " and ",
-        " with ",
+        "resume",
     ),
     "fr": (
-        "expérience",
-        "formation",
+        "expérience professionnelle",
         "compétences",
-        "langues",
-        "objectif professionnel",
+        "formation",
+        "poste",
+        "nous recherchons",
+        "années d'expérience",
+        "cahier des charges",
         "curriculum vitae",
-        " le ",
-        " des ",
-        " et ",
+        "missions",
+        "profil recherché",
     ),
     "de": (
-        "erfahrung",
-        "ausbildung",
-        "fähigkeiten",
-        "sprachen",
         "berufserfahrung",
+        "anforderungen",
+        "aufgaben",
+        "wir suchen",
         "lebenslauf",
-        " und ",
-        " der ",
-        " die ",
+        "vollzeit",
+        "kenntnisse",
+        "abschluss",
+        "stellenbeschreibung",
     ),
     "pt": (
-        "experiência",
-        "formação",
-        "habilidades",
-        "idiomas",
-        "objetivo profissional",
+        "experiência profissional",
+        "requisitos",
+        "responsabilidades",
+        "procuramos",
+        "anos de experiência",
         "currículo",
-        " para ",
-        " com ",
+        "formação académica",
+        "habilidades técnicas",
     ),
     "it": (
-        "esperienza",
-        "formazione",
-        "competenze",
-        "lingue",
-        "obiettivo professionale",
+        "esperienza professionale",
+        "requisiti",
+        "responsabilità",
+        "cerchiamo",
+        "anni di esperienza",
         "curriculum",
-        " il ",
-        " della ",
+        "competenze",
+        "laurea",
     ),
     "ca": (
-        "experiència",
+        "experiència professional",
+        "requisits",
+        "responsabilitats",
+        "busquem",
+        "anys d'experiència",
+        "currículum",
         "formació",
         "habilitats",
-        "idiomes",
-        "objectiu professional",
-        "currículum",
-        " el ",
-        " de ",
     ),
 }
 
@@ -203,29 +217,33 @@ def detect_language_hint(text: str) -> str:
     if not text or not text.strip():
         return ""
 
-    sample = text[:8000].lower()
-    scores: dict[str, int] = {}
+    sample = text[:10000].lower()
+    scores: dict[str, float] = {}
 
     for lang, markers in LANGUAGE_MARKERS.items():
-        score = 0
+        score = 0.0
         for marker in markers:
             if marker in sample:
-                score += sample.count(marker)
+                # Longer markers are more distinctive
+                weight = 2.0 if len(marker) >= 12 else 1.0
+                score += sample.count(marker) * weight
         if score:
             scores[lang] = score
 
     if not scores:
         return ""
 
-    return max(scores, key=scores.get)
+    ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    best_lang, best_score = ranked[0]
+    if len(ranked) > 1 and ranked[1][1] >= best_score * 0.85:
+        # Near-tie: prefer job-offer-ish English/Spanish markers already weighted
+        return best_lang
+    return best_lang
 
 
 def resolve_cv_language(cv: StructuredCV | None) -> str:
     if cv is None:
         return ""
-
-    if (cv.document_language or "").strip():
-        return normalize_language_code(cv.document_language)
 
     cv_blob = " ".join(
         filter(
@@ -233,12 +251,20 @@ def resolve_cv_language(cv: StructuredCV | None) -> str:
             [
                 cv.summary,
                 " ".join(cv.skills),
-                " ".join(cv.languages),
-                " ".join(item.role for item in cv.experience),
+                " ".join(item.role + " " + " ".join(item.bullets) for item in cv.experience),
+                " ".join(item.degree for item in cv.education),
             ],
         )
     )
-    return detect_language_hint(cv_blob)
+    detected = detect_language_hint(cv_blob)
+    declared = normalize_language_code(cv.document_language) if (cv.document_language or "").strip() else ""
+
+    # Prefer content detection when it conflicts with a stale/wrong document_language
+    if detected and declared and declared != "auto" and detected != declared:
+        return detected
+    if declared and declared != "auto":
+        return declared
+    return detected
 
 
 def should_translate_cv(cv_lang: str, target_lang: str) -> bool:
@@ -247,6 +273,49 @@ def should_translate_cv(cv_lang: str, target_lang: str) -> bool:
     if not cv_lang:
         return True
     return cv_lang != target_lang
+
+
+_BILINGUAL_SPLIT_RE = re.compile(
+    r"\s+(?:/|–|—|\||·)\s+(?=[A-ZÁÉÍÓÚÜÑÀÈÌÒÙÄÖß])"
+)
+
+
+def strip_bilingual_line(text: str) -> str:
+    """Keep the first clause when a line looks like 'ES / EN' duplicates."""
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+    parts = _BILINGUAL_SPLIT_RE.split(raw, maxsplit=1)
+    if len(parts) == 2 and len(parts[0].split()) >= 1 and len(parts[1].split()) >= 1:
+        # Only strip when both sides look like full phrases (not "CI/CD")
+        left, right = parts[0].strip(), parts[1].strip()
+        if len(left) >= 8 and len(right) >= 8:
+            return left
+    return raw
+
+
+def sanitize_cv_language_fields(cv: "StructuredCV") -> "StructuredCV":
+    """Remove bilingual duplicate phrases from user-facing fields."""
+    from cv_schema import StructuredCV
+
+    if not isinstance(cv, StructuredCV):
+        return cv
+
+    updated = cv.model_copy(deep=True)
+    updated.summary = strip_bilingual_line(updated.summary)
+    if updated.contact.headline:
+        updated.contact.headline = strip_bilingual_line(updated.contact.headline)
+    updated.skills = [strip_bilingual_line(s) for s in updated.skills if strip_bilingual_line(s)]
+    updated.certifications = [
+        strip_bilingual_line(c) for c in updated.certifications if strip_bilingual_line(c)
+    ]
+    updated.languages = [strip_bilingual_line(lang) for lang in updated.languages if strip_bilingual_line(lang)]
+    for item in updated.experience:
+        item.role = strip_bilingual_line(item.role)
+        item.bullets = [strip_bilingual_line(b) for b in item.bullets if strip_bilingual_line(b)]
+    for item in updated.education:
+        item.degree = strip_bilingual_line(item.degree)
+    return updated
 
 
 def resolve_adaptation_settings(
