@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from cv_schema import ContactInfo, ExperienceItem, StructuredCV
+from cv_schema import ContactInfo, EducationItem, ExperienceItem, StructuredCV
 from link_utils import (
     enrich_cv_links,
     is_project_entry,
@@ -23,6 +23,132 @@ _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?…])\s+")
 def _clean_bullet(bullet: str) -> str:
     """Strip bullet markers only."""
     return _BULLET_PREFIX_RE.sub("", (bullet or "").strip())
+
+
+def _norm_key(*parts: str) -> str:
+    return " ".join(
+        re.sub(r"\s+", " ", (p or "").strip().lower())
+        for p in parts
+        if (p or "").strip()
+    )
+
+
+def dedupe_education(items: list[EducationItem]) -> list[EducationItem]:
+    """Drop duplicate education rows (same school/period or same degree+school)."""
+    result: list[EducationItem] = []
+    seen: set[str] = set()
+
+    for item in items:
+        degree = (item.degree or "").strip()
+        school = (item.school or "").strip()
+        period = (item.period or "").strip()
+        if not degree and not school:
+            continue
+
+        keys: list[str] = []
+        if school and period:
+            keys.append(_norm_key(school, period))
+        if degree and school:
+            keys.append(_norm_key(degree, school))
+        if degree and period:
+            keys.append(_norm_key(degree, period))
+        if not keys:
+            keys.append(_norm_key(degree or school))
+
+        if any(k in seen for k in keys):
+            continue
+        for k in keys:
+            seen.add(k)
+        result.append(EducationItem(degree=degree, school=school, period=period))
+    return result
+
+
+def merge_education(
+    original: list[EducationItem],
+    adapted: list[EducationItem],
+) -> list[EducationItem]:
+    """Prefer adapted wording once per school/period; never concatenate duplicates."""
+    if not adapted:
+        return dedupe_education(original)
+
+    merged = dedupe_education(adapted)
+    seen: set[str] = set()
+    for item in merged:
+        if item.school and item.period:
+            seen.add(_norm_key(item.school, item.period))
+        if item.degree and item.school:
+            seen.add(_norm_key(item.degree, item.school))
+
+    for item in original:
+        degree = (item.degree or "").strip()
+        school = (item.school or "").strip()
+        period = (item.period or "").strip()
+        if not degree and not school:
+            continue
+        keys: list[str] = []
+        if school and period:
+            keys.append(_norm_key(school, period))
+        if degree and school:
+            keys.append(_norm_key(degree, school))
+        if any(k in seen for k in keys):
+            continue
+        for k in keys or [_norm_key(degree or school)]:
+            seen.add(k)
+        merged.append(EducationItem(degree=degree, school=school, period=period))
+
+    return dedupe_education(merged)
+
+
+def dedupe_strings(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for raw in items:
+        text = (raw or "").strip()
+        if not text:
+            continue
+        key = _norm_key(text)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(text)
+    return out
+
+
+def dedupe_experience(items: list[ExperienceItem]) -> list[ExperienceItem]:
+    """Drop duplicate roles with same company+period (or role+company)."""
+    result: list[ExperienceItem] = []
+    seen: set[str] = set()
+    for item in items:
+        role = (item.role or "").strip()
+        company = (item.company or "").strip()
+        period = (item.period or "").strip()
+        if not role and not company and not item.bullets:
+            continue
+        keys: list[str] = []
+        if company and period:
+            keys.append(_norm_key(company, period))
+        if role and company:
+            keys.append(_norm_key(role, company))
+        if not keys:
+            keys.append(_norm_key(role, company, period))
+        if any(k in seen for k in keys):
+            for prev in result:
+                prev_keys: list[str] = []
+                if prev.company.strip() and prev.period.strip():
+                    prev_keys.append(_norm_key(prev.company, prev.period))
+                if prev.role.strip() and prev.company.strip():
+                    prev_keys.append(_norm_key(prev.role, prev.company))
+                if any(k in prev_keys for k in keys):
+                    existing = {_norm_key(b) for b in prev.bullets}
+                    for b in item.bullets:
+                        if _norm_key(b) not in existing and b.strip():
+                            prev.bullets.append(b.strip())
+                    break
+            continue
+        for k in keys:
+            seen.add(k)
+        result.append(item.model_copy(deep=True))
+    return result
 
 
 def _first_sentences(text: str, max_chars: int) -> str:
@@ -295,6 +421,11 @@ def prepare_cv_for_pdf(
         for item in prepared.experience
         if item.role.strip() or item.company.strip() or item.bullets
     ]
+    prepared.experience = dedupe_experience(prepared.experience)
+    prepared.education = dedupe_education(prepared.education)
+    prepared.certifications = dedupe_strings(prepared.certifications)
+    prepared.languages = dedupe_strings(prepared.languages)
+    prepared.skills = dedupe_strings(prepared.skills)
 
     if compress_level > 0 or truncate:
         prepared = compress_cv_for_one_page(prepared, level=max(compress_level, 2 if truncate else 1))
