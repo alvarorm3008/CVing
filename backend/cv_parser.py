@@ -72,11 +72,6 @@ def parse_cv_text(cv_text: str) -> StructuredCV:
 
     result = enrich_cv_links(result, cv_text)
     result = fill_missing_contact(result, cv_text)
-    from cv_pdf_prep import dedupe_education, dedupe_experience, dedupe_strings
+    from cv_pdf_prep import dedupe_cv
 
-    result.education = dedupe_education(result.education)
-    result.experience = dedupe_experience(result.experience)
-    result.certifications = dedupe_strings(result.certifications)
-    result.languages = dedupe_strings(result.languages)
-    result.skills = dedupe_strings(result.skills)
-    return result
+    return dedupe_cv(result)

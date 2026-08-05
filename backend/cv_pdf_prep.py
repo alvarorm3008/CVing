@@ -100,35 +100,55 @@ def merge_education(
 
 
 def dedupe_strings(items: list[str]) -> list[str]:
-    seen: set[str] = set()
-    out: list[str] = []
+    """Drop exact and near-duplicate strings (case/spacing; keep longer variant)."""
+    cleaned: list[str] = []
     for raw in items:
         text = (raw or "").strip()
-        if not text:
-            continue
+        if text:
+            cleaned.append(text)
+
+    result: list[str] = []
+    for text in cleaned:
         key = _norm_key(text)
-        if key in seen:
+        if not key:
             continue
-        seen.add(key)
-        out.append(text)
-    return out
+        replaced = False
+        for i, prev in enumerate(result):
+            prev_key = _norm_key(prev)
+            # Exact or one contains the other (bilingual / paraphrased duplicate)
+            if key == prev_key or key in prev_key or prev_key in key:
+                if len(text) > len(prev):
+                    result[i] = text
+                replaced = True
+                break
+        if not replaced:
+            result.append(text)
+    return result
+
+
+def dedupe_bullets(bullets: list[str]) -> list[str]:
+    return dedupe_strings([_clean_bullet(b) for b in bullets if (b or "").strip()])
 
 
 def dedupe_experience(items: list[ExperienceItem]) -> list[ExperienceItem]:
-    """Drop duplicate roles with same company+period (or role+company)."""
+    """Drop duplicate roles with same company+period (or role+company); dedupe bullets."""
     result: list[ExperienceItem] = []
     seen: set[str] = set()
     for item in items:
         role = (item.role or "").strip()
         company = (item.company or "").strip()
         period = (item.period or "").strip()
-        if not role and not company and not item.bullets:
+        location = (item.location or "").strip()
+        bullets = dedupe_bullets(item.bullets or [])
+        if not role and not company and not bullets:
             continue
         keys: list[str] = []
         if company and period:
             keys.append(_norm_key(company, period))
         if role and company:
             keys.append(_norm_key(role, company))
+        if role and period:
+            keys.append(_norm_key(role, period))
         if not keys:
             keys.append(_norm_key(role, company, period))
         if any(k in seen for k in keys):
@@ -138,17 +158,51 @@ def dedupe_experience(items: list[ExperienceItem]) -> list[ExperienceItem]:
                     prev_keys.append(_norm_key(prev.company, prev.period))
                 if prev.role.strip() and prev.company.strip():
                     prev_keys.append(_norm_key(prev.role, prev.company))
+                if prev.role.strip() and prev.period.strip():
+                    prev_keys.append(_norm_key(prev.role, prev.period))
                 if any(k in prev_keys for k in keys):
-                    existing = {_norm_key(b) for b in prev.bullets}
-                    for b in item.bullets:
-                        if _norm_key(b) not in existing and b.strip():
-                            prev.bullets.append(b.strip())
+                    prev.bullets = dedupe_bullets(list(prev.bullets) + bullets)
+                    if not prev.role.strip() and role:
+                        prev.role = role
+                    if not prev.location.strip() and location:
+                        prev.location = location
                     break
             continue
         for k in keys:
             seen.add(k)
-        result.append(item.model_copy(deep=True))
+        result.append(
+            ExperienceItem(
+                role=role,
+                company=company,
+                location=location,
+                period=period,
+                bullets=bullets,
+            )
+        )
     return result
+
+
+def dedupe_cv(cv: StructuredCV) -> StructuredCV:
+    """Remove duplicates across every list field of a structured CV."""
+    out = cv.model_copy(deep=True)
+    out.skills = dedupe_strings(out.skills)
+    out.certifications = dedupe_strings(out.certifications)
+    out.languages = dedupe_strings(out.languages)
+    out.education = dedupe_education(out.education)
+    out.experience = dedupe_experience(out.experience)
+    if getattr(out, "projects", None):
+        # Projects rarely used in PDF; still dedupe titles
+        seen: set[str] = set()
+        unique_projects = []
+        for project in out.projects:
+            title = (getattr(project, "title", None) or "").strip()
+            key = _norm_key(title, getattr(project, "url", "") or "")
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            unique_projects.append(project)
+        out.projects = unique_projects
+    return out
 
 
 def _first_sentences(text: str, max_chars: int) -> str:
@@ -266,6 +320,7 @@ def _merge_single_entry(
     if base and is_project_entry(base) and bullets_source:
         bullets_source = merge_bullets_preserving_urls(base.bullets, bullets_source)
     bullets = [_clean_bullet(b) for b in bullets_source if b.strip()]
+    bullets = dedupe_bullets(bullets)
 
     role = adapted.role.strip() or (base.role.strip() if base else "")
     company = adapted.company.strip() or (base.company.strip() if base else "")
@@ -340,7 +395,7 @@ def merge_experience(
             if adapted_projects
             else []
         )
-        return merged_jobs + merged_projects
+        return dedupe_experience(merged_jobs + merged_projects)
 
     merged_jobs = _merge_entry_lists(orig_jobs, adapted_jobs) if adapted_jobs else orig_jobs
 
@@ -351,7 +406,7 @@ def merge_experience(
             _merge_single_entry(p, p) for p in orig_projects if p.bullets or p.role.strip()
         ]
 
-    return merged_jobs + merged_projects
+    return dedupe_experience(merged_jobs + merged_projects)
 
 
 def preserve_contact(original: ContactInfo, updated: ContactInfo) -> None:
@@ -421,14 +476,11 @@ def prepare_cv_for_pdf(
         for item in prepared.experience
         if item.role.strip() or item.company.strip() or item.bullets
     ]
-    prepared.experience = dedupe_experience(prepared.experience)
-    prepared.education = dedupe_education(prepared.education)
-    prepared.certifications = dedupe_strings(prepared.certifications)
-    prepared.languages = dedupe_strings(prepared.languages)
-    prepared.skills = dedupe_strings(prepared.skills)
+    prepared = dedupe_cv(prepared)
 
     if compress_level > 0 or truncate:
         prepared = compress_cv_for_one_page(prepared, level=max(compress_level, 2 if truncate else 1))
+        prepared = dedupe_cv(prepared)
 
     return prepared
 

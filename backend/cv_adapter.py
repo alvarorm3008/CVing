@@ -5,6 +5,7 @@ from cv_schema import EducationItem, ExperienceItem, StructuredCV, parse_json_mo
 from link_utils import enrich_cv_links
 from cv_pdf_prep import (
     PDF_CV_RULES,
+    dedupe_cv,
     dedupe_strings,
     merge_education,
     merge_experience,
@@ -220,7 +221,8 @@ def adapt_cv_sections(
             "summary, skills, experience roles/bullets, education degrees, "
             "certifications AND spoken languages. "
             "Return education, certifications and languages arrays filled in the target language. "
-            "Each education entry ONCE only (never duplicate the same school/period in two languages). "
+            "Each education, job, skill, certification and language entry ONCE only "
+            "(never duplicate the same item in two languages or twice). "
             "ONE language only — no bilingual duplicates."
         )
     if previous_adaptation is not None:
@@ -328,6 +330,7 @@ def apply_adaptations(
 
     updated.document_language = resolved_lang
     updated = sanitize_cv_language_fields(updated)
+    updated = dedupe_cv(updated)
 
     enrich_cv_links(updated)
     return prepare_cv_for_pdf(updated, target_role=adapted.target_role, truncate=False)
