@@ -333,4 +333,4 @@ def apply_adaptations(
     updated = sanitize_cv_language_fields(updated)
 
     enrich_cv_links(updated)
-    return prepare_cv_for_pdf(updated, target_role=adapted.target_role, truncate=True)
+    return prepare_cv_for_pdf(updated, target_role=adapted.target_role, truncate=False)

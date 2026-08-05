@@ -15,7 +15,8 @@ Rules:
 - Put professional title/tagline in contact.headline (e.g. "Software Developer & Data Analyst").
 - Do NOT add a separate "Projects" section — project work belongs in experience bullets if relevant.
 - Group skills as "Category: skill1, skill2, skill3" (Languages, Frameworks, Cloud, etc.).
-- Keep bullets concise (under 130 characters), action-led, with metrics when present.
+- Keep bullets complete and action-led, with metrics when present. Do NOT truncate with ellipsis (…).
+- Preserve full wording of achievements — never shorten mid-sentence.
 - Use empty strings "" for missing fields, never null.
 
 """ + parse_language_instruction() + """

@@ -25,10 +25,10 @@ function MiniCV({ cv, label, accent }) {
       </div>
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm">
         <h4 className="font-bold text-neutral-900">{cv.contact?.full_name || "CV"}</h4>
-        {cv.summary && <p className="mt-2 line-clamp-3 text-neutral-700">{cv.summary}</p>}
+        {cv.summary && <p className="mt-2 whitespace-pre-wrap text-neutral-700">{cv.summary}</p>}
         {cv.skills?.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {cv.skills.slice(0, 8).map((skill) => (
+            {cv.skills.map((skill) => (
               <span
                 key={skill}
                 className="rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-xs text-neutral-800"
@@ -36,19 +36,16 @@ function MiniCV({ cv, label, accent }) {
                 {skill}
               </span>
             ))}
-            {cv.skills.length > 8 && (
-              <span className="text-xs text-neutral-500">+{cv.skills.length - 8}</span>
-            )}
           </div>
         )}
         {cv.experience?.[0] && (
           <div className="mt-3 border-t border-neutral-200 pt-3">
             <p className="font-medium text-neutral-900">{cv.experience[0].role}</p>
-            {cv.experience[0].bullets?.[0] && (
-              <p className="mt-1 line-clamp-2 text-xs text-neutral-600">
-                {cv.experience[0].bullets[0]}
+            {(cv.experience[0].bullets || []).map((bullet, i) => (
+              <p key={i} className="mt-1 text-xs text-neutral-600">
+                {bullet}
               </p>
-            )}
+            ))}
           </div>
         )}
       </div>

@@ -62,16 +62,16 @@ export default function ChangesPanel({ originalCv, adaptedCv, atsMatch }) {
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
             {t("changes.bulletsRewritten")}
           </p>
-          {bulletChanges.slice(0, 5).map((change, i) => (
+          {bulletChanges.map((change, i) => (
             <div key={`${change.role}-${i}`} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm">
               <p className="text-xs font-medium text-neutral-500">
                 {change.role}
                 {change.company ? ` · ${change.company}` : ""}
               </p>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-start">
-                <p className="flex-1 text-neutral-500 line-through">{change.before}</p>
+                <p className="flex-1 whitespace-pre-wrap text-neutral-500 line-through">{change.before}</p>
                 <ArrowRight className="hidden h-4 w-4 shrink-0 text-neutral-400 sm:mt-1 sm:block" />
-                <p className="flex-1 text-neutral-800">{change.after}</p>
+                <p className="flex-1 whitespace-pre-wrap text-neutral-800">{change.after}</p>
               </div>
             </div>
           ))}

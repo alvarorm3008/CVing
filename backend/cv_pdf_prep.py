@@ -1,4 +1,8 @@
-"""Normalize structured CV data for professional PDF output."""
+"""Normalize structured CV data for professional PDF output.
+
+Prefer full wording; when fitting to one page, compress by dropping
+lower-priority bullets / shortening to whole sentences — never mid-word "…".
+"""
 
 from __future__ import annotations
 
@@ -9,30 +13,114 @@ from link_utils import (
     enrich_cv_links,
     is_project_entry,
     merge_bullets_preserving_urls,
-    _first_repo_url,
 )
 
-_MAX_SUMMARY_CHARS = 400
-_MAX_BULLET_CHARS = 130
-_MAX_BULLETS_PER_ROLE = 3
-_MAX_SKILL_ITEMS = 24
 
 _BULLET_PREFIX_RE = re.compile(r"^[\-•●▪]\s*")
-
-
-def _trim_text(text: str, max_len: int) -> str:
-    cleaned = (text or "").strip()
-    if len(cleaned) <= max_len:
-        return cleaned
-    cut = cleaned[: max_len - 1].rsplit(" ", 1)[0]
-    return f"{cut}…" if cut else cleaned[: max_len - 1] + "…"
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?…])\s+")
 
 
 def _clean_bullet(bullet: str) -> str:
-    cleaned = _BULLET_PREFIX_RE.sub("", bullet.strip())
-    if _first_repo_url(cleaned)[0]:
+    """Strip bullet markers only."""
+    return _BULLET_PREFIX_RE.sub("", (bullet or "").strip())
+
+
+def _first_sentences(text: str, max_chars: int) -> str:
+    """Keep whole sentences under max_chars. Never append ellipsis."""
+    cleaned = (text or "").strip()
+    if not cleaned or len(cleaned) <= max_chars:
         return cleaned
-    return _trim_text(cleaned, _MAX_BULLET_CHARS)
+
+    parts = [p.strip() for p in _SENTENCE_SPLIT_RE.split(cleaned) if p.strip()]
+    if not parts:
+        return cleaned
+
+    kept: list[str] = []
+    for part in parts:
+        candidate = " ".join(kept + [part]).strip()
+        if kept and len(candidate) > max_chars:
+            break
+        kept.append(part)
+        if len(candidate) >= max_chars:
+            break
+
+    if kept:
+        return " ".join(kept)
+    # One very long sentence: keep it intact (better than "…")
+    return parts[0]
+
+
+def _bullet_priority(bullet: str) -> int:
+    """Higher = more worth keeping when compressing."""
+    score = 0
+    lower = bullet.lower()
+    if re.search(r"\d", bullet):
+        score += 3
+    if any(tok in lower for tok in ("%","€", "$", "k ", "x ", "→")):
+        score += 2
+    if any(tok in lower for tok in ("led", "built", "reduced", "increased", "improved", "launched", "diseñ", "mejor", "reduj", "aument")):
+        score += 1
+    if "http" in lower or "github.com" in lower:
+        score += 2
+    score += min(len(bullet) // 40, 2)
+    return score
+
+
+def compress_cv_for_one_page(cv: StructuredCV, level: int = 1) -> StructuredCV:
+    """
+    Progressive compression to fit one A4 page.
+    level 0 = no change; higher = more aggressive (still whole sentences / full bullets kept).
+    """
+    out = cv.model_copy(deep=True)
+    if level <= 0:
+        return out
+
+    # Level 1+: shorten summary to whole sentences
+    summary_limits = {1: 320, 2: 260, 3: 220, 4: 180, 5: 140}
+    max_summary = summary_limits.get(level, 140)
+    out.summary = _first_sentences(out.summary, max_summary)
+
+    # Bullet caps per role by level
+    bullet_caps = {1: 4, 2: 3, 3: 2, 4: 2, 5: 1}
+    max_bullets = bullet_caps.get(level, 1)
+
+    new_experience: list[ExperienceItem] = []
+    for item in out.experience:
+        bullets = [_clean_bullet(b) for b in item.bullets if b.strip()]
+        if len(bullets) > max_bullets:
+            ranked = sorted(bullets, key=_bullet_priority, reverse=True)
+            keep = set(ranked[:max_bullets])
+            # Preserve original order among kept bullets
+            bullets = [b for b in bullets if b in keep][:max_bullets]
+
+        # Level 3+: shorten very long bullets to first sentence(s)
+        if level >= 3:
+            char_cap = 160 if level == 3 else (130 if level == 4 else 110)
+            bullets = [_first_sentences(b, char_cap) for b in bullets]
+
+        new_experience.append(
+            ExperienceItem(
+                role=item.role,
+                company=item.company,
+                location=item.location,
+                period=item.period,
+                bullets=bullets,
+            )
+        )
+    out.experience = new_experience
+
+    # Level 4+: trim skills / certs / languages volume
+    if level >= 4:
+        out.skills = normalize_skills(out.skills)[:8]
+        out.certifications = out.certifications[:3]
+        out.languages = out.languages[:4]
+    if level >= 5:
+        out.skills = normalize_skills(out.skills)[:5]
+        out.certifications = out.certifications[:2]
+        if len(out.experience) > 4:
+            out.experience = out.experience[:4]
+
+    return out
 
 
 def _entry_key(item: ExperienceItem, *, translated: bool = False) -> tuple[str, str]:
@@ -51,7 +139,7 @@ def _merge_single_entry(
     bullets_source = adapted.bullets if adapted.bullets else (base.bullets if base else [])
     if base and is_project_entry(base) and bullets_source:
         bullets_source = merge_bullets_preserving_urls(base.bullets, bullets_source)
-    bullets = [_clean_bullet(b) for b in bullets_source if b.strip()][:_MAX_BULLETS_PER_ROLE]
+    bullets = [_clean_bullet(b) for b in bullets_source if b.strip()]
 
     role = adapted.role.strip() or (base.role.strip() if base else "")
     company = adapted.company.strip() or (base.company.strip() if base else "")
@@ -150,6 +238,7 @@ def preserve_contact(original: ContactInfo, updated: ContactInfo) -> None:
 
 
 def normalize_skills(skills: list[str]) -> list[str]:
+    """Deduplicate skills; keep full text (no ellipsis)."""
     seen: set[str] = set()
     cleaned: list[str] = []
     for skill in skills:
@@ -161,21 +250,7 @@ def normalize_skills(skills: list[str]) -> list[str]:
             continue
         seen.add(key)
         cleaned.append(text)
-
-    if len(cleaned) <= _MAX_SKILL_ITEMS:
-        return cleaned
-
-    grouped: list[str] = []
-    flat: list[str] = []
-    for skill in cleaned:
-        if ":" in skill:
-            grouped.append(skill)
-        else:
-            flat.append(skill)
-
-    if flat:
-        grouped.append(f"Other: {', '.join(flat[:10])}")
-    return grouped[:_MAX_SKILL_ITEMS]
+    return cleaned
 
 
 def sync_headline(cv: StructuredCV, target_role: str = "") -> None:
@@ -187,7 +262,7 @@ def sync_headline(cv: StructuredCV, target_role: str = "") -> None:
         return
     if cv.summary:
         first = cv.summary.strip().split("\n")[0].strip()
-        if len(first) < 90:
+        if first:
             cv.contact.headline = first
 
 
@@ -196,7 +271,8 @@ def prepare_cv_for_pdf(
     *,
     target_role: str = "",
     extra_text: str = "",
-    truncate: bool = True,
+    truncate: bool = False,
+    compress_level: int = 0,
 ) -> StructuredCV:
     """Last-mile cleanup before HTML/PDF render."""
     prepared = cv.model_copy(deep=True)
@@ -205,44 +281,35 @@ def prepare_cv_for_pdf(
     prepared.experience = [e for e in prepared.experience if not is_project_entry(e)]
 
     sync_headline(prepared, target_role)
-    if truncate:
-        prepared.summary = _trim_text(prepared.summary, _MAX_SUMMARY_CHARS)
-        prepared.skills = normalize_skills(prepared.skills)
+    prepared.summary = (prepared.summary or "").strip()
+    prepared.skills = normalize_skills(prepared.skills)
 
-        prepared.experience = [
-            ExperienceItem(
-                role=item.role.strip(),
-                company=item.company.strip(),
-                location=item.location.strip(),
-                period=item.period.strip(),
-                bullets=[_clean_bullet(b) for b in item.bullets if b.strip()][:_MAX_BULLETS_PER_ROLE],
-            )
-            for item in prepared.experience
-            if item.role.strip() or item.company.strip() or item.bullets
-        ]
-    else:
-        prepared.experience = [
-            ExperienceItem(
-                role=item.role.strip(),
-                company=item.company.strip(),
-                location=item.location.strip(),
-                period=item.period.strip(),
-                bullets=[_BULLET_PREFIX_RE.sub("", b.strip()) for b in item.bullets if b.strip()],
-            )
-            for item in prepared.experience
-            if item.role.strip() or item.company.strip() or item.bullets
-        ]
+    prepared.experience = [
+        ExperienceItem(
+            role=item.role.strip(),
+            company=item.company.strip(),
+            location=item.location.strip(),
+            period=item.period.strip(),
+            bullets=[_clean_bullet(b) for b in item.bullets if b.strip()],
+        )
+        for item in prepared.experience
+        if item.role.strip() or item.company.strip() or item.bullets
+    ]
+
+    if compress_level > 0 or truncate:
+        prepared = compress_cv_for_one_page(prepared, level=max(compress_level, 2 if truncate else 1))
 
     return prepared
 
 
 PDF_CV_RULES = """
-PDF / CV LAYOUT RULES (critical — output must fit ONE page when possible):
-- summary: 2–3 sentences, max 380 characters
+PDF / CV LAYOUT RULES (target: ONE page when possible):
+- summary: 2–3 complete sentences (not mid-sentence cuts, never use ellipsis …)
 - contact.headline: professional title matching the target job
 - skills: 3–5 lines "Category: skill1, skill2, skill3"
-- experience: preserve EVERY role, company, period and location from source CV — never drop employers
-- bullets: max 3 per role, max 120 characters each, action verb + metric
+- experience: preserve EVERY role, company, period and location — never drop employers
+- bullets: 2–3 strong complete bullets per role (action + metric). Prefer fewer full bullets over truncated text with "…"
+- Never shorten mid-word or mid-sentence with ellipsis. Drop weaker bullets instead if space is tight.
 - contact.github: profile URL (e.g. https://github.com/username) — no separate projects section in PDF
 - NEVER remove contact.linkedin, contact.github or URLs in bullets
 - do not invent employers, dates or degrees

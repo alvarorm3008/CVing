@@ -1,4 +1,4 @@
-"""Auto layout: intenta 1 página, permite 2 si hace falta."""
+"""Auto layout: fit CV on ONE page by compacting / summarizing, not by spilling to page 2."""
 
 from __future__ import annotations
 
@@ -41,20 +41,28 @@ def fit_cv_layout(
     page,
 ) -> LayoutResult:
     """
-    Prueba niveles de compactación y devuelve HTML + metadata.
-    render_html_fn(cv, compact) -> str
-    render_pdf_fn(html) -> bytes  (solo usado si hace falta validar)
+    Try full content first, then progressive compression until it fits 1 page.
+    Prefer summarizing/dropping weaker bullets over a 2-page PDF.
     """
+    # (tier_name, compact, compress_level)
     tiers = [
-        ("standard", False, True),
-        ("compact", True, True),
-        ("two_page", False, False),
+        ("standard", False, 0),
+        ("compact", True, 0),
+        ("summary", True, 1),
+        ("bullets3", True, 2),
+        ("bullets2", True, 3),
+        ("tight", True, 4),
+        ("minimal", True, 5),
     ]
 
-    best: LayoutResult | None = None
+    best_one_page: LayoutResult | None = None
+    last_result: LayoutResult | None = None
 
-    for tier_name, compact, truncate in tiers:
-        prepared = prepare_cv_for_pdf(cv.model_copy(deep=True), truncate=truncate)
+    for tier_name, compact, compress_level in tiers:
+        prepared = prepare_cv_for_pdf(
+            cv.model_copy(deep=True),
+            compress_level=compress_level,
+        )
         html = render_html_fn(prepared, compact=compact)
         page.set_content(html, wait_until="load")
         page.wait_for_timeout(150)
@@ -67,18 +75,15 @@ def fit_cv_layout(
             page_count=pages,
             layout_tier=tier_name,
         )
+        last_result = result
 
         if pages <= 1:
             return result
 
-        if tier_name == "two_page":
-            return LayoutResult(
-                html=html,
-                compact=False,
-                page_count=2,
-                layout_tier="two_page",
-            )
+        # Keep most-compressed overflow as fallback if nothing fits
+        best_one_page = result
 
-        best = result
-
-    return best or LayoutResult(html="", compact=True, page_count=1, layout_tier="compact")
+    # Last resort: most compressed layout (still usually closer to 1 page than full text)
+    return best_one_page or last_result or LayoutResult(
+        html="", compact=True, page_count=1, layout_tier="minimal"
+    )
