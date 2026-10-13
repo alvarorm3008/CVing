@@ -13,7 +13,7 @@ const es = {
   job: {
     label: "Descripción de la oferta",
     placeholder: "Pega aquí la oferta completa...",
-    offerLanguage: "Idioma de la oferta: {language} — el CV se adaptará y traducirá automáticamente a este idioma.",
+    offerLanguage: "Idioma de la oferta: {language}. El CV se adaptará y traducirá automáticamente a este idioma.",
   },
   cv: {
     label: "Tu CV (PDF o DOCX)",
@@ -183,7 +183,7 @@ const es = {
     skillsAdded: "Skills nuevos",
     bulletsRewritten: "Bullets reescritos",
     stillMissing: "Aún faltan en requisitos",
-    disclaimer: "Solo añade lo que domines — no inventes experiencia.",
+    disclaimer: "Solo añade lo que domines, no inventes experiencia.",
   },
   pack: {
     title: "Candidatura lista",
@@ -234,6 +234,9 @@ const es = {
     statusSent: "Enviado",
     statusInterview: "Entrevista",
     statusRejected: "Rechazado",
+    voiceCall: "Llamar con VoiceAI",
+    voiceNeedCv: "Necesitas un CV adaptado en el historial para practicar la entrevista.",
+    voiceFailed: "No se pudo abrir la llamada de VoiceAI. Revisa VOICEAI_API_URL en el backend.",
   },
   comparison: {
     title: "Antes vs después",
@@ -296,10 +299,10 @@ const es = {
     defaultName: "Curriculum Vitae",
   },
   progress: {
-    indeterminate: "Procesando en el servidor — puede tardar 30–90 s según la oferta y el motor de IA…",
+    indeterminate: "Procesando en el servidor. Puede tardar 30-90 s según la oferta y el motor de IA…",
   },
   footer: {
-    poweredBy: "CV Adapter — motor:",
+    poweredBy: "CV Adapter, motor:",
   },
   ats: {
     applyNow: "Puedes presentarte",
@@ -342,7 +345,7 @@ const en = {
   job: {
     label: "Job description",
     placeholder: "Paste the full job posting here...",
-    offerLanguage: "Offer language: {language} — the CV will be adapted and translated to this language automatically.",
+    offerLanguage: "Offer language: {language}. The CV will be adapted and translated to this language automatically.",
   },
   cv: {
     label: "Your CV (PDF or DOCX)",
@@ -475,6 +478,9 @@ const en = {
     statusSent: "Sent",
     statusInterview: "Interview",
     statusRejected: "Rejected",
+    voiceCall: "Call with VoiceAI",
+    voiceNeedCv: "You need an adapted CV in history to practice the interview.",
+    voiceFailed: "Could not open the VoiceAI call. Check VOICEAI_API_URL on the backend.",
   },
   result: {
     title: "Result",
@@ -525,7 +531,7 @@ const en = {
     skillsAdded: "New skills",
     bulletsRewritten: "Rewritten bullets",
     stillMissing: "Still missing from requirements",
-    disclaimer: "Only add what you know — don't invent experience.",
+    disclaimer: "Only add what you know, don't invent experience.",
   },
   pack: {
     title: "Application ready",
@@ -624,10 +630,10 @@ const en = {
     defaultName: "Curriculum Vitae",
   },
   progress: {
-    indeterminate: "Processing on server — may take 30–90s depending on the job and AI engine…",
+    indeterminate: "Processing on server. May take 30-90s depending on the job and AI engine…",
   },
   footer: {
-    poweredBy: "CV Adapter — engine:",
+    poweredBy: "CV Adapter, engine:",
   },
   ats: {
     applyNow: "You can apply",

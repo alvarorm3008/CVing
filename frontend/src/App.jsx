@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Download,
   Eye,
   FileText,
   Lightbulb,
   Loader2,
+  ArrowRight,
   Mail,
   Package,
   Pencil,
@@ -138,6 +139,7 @@ function App() {
   const [cvFile, setCvFile] = useState(null);
   const [cvBase, setCvBase] = useState(null);
   const [history, setHistory] = useState([]);
+  const [voiceCallingId, setVoiceCallingId] = useState(null);
   const [cvData, setCvData] = useState(null);
   const [originalCv, setOriginalCv] = useState(null);
   const [boosted, setBoosted] = useState(false);
@@ -733,6 +735,49 @@ function App() {
   };
   const handleHistoryStatusChange = (id, status) => setHistory(updateHistoryEntry(id, { status }));
 
+  const handleVoiceCall = async (entry) => {
+    if (!entry?.cv) {
+      setError(t("history.voiceNeedCv"));
+      return;
+    }
+    setVoiceCallingId(entry.id);
+    setError("");
+    try {
+      const resourceRes = await fetch(`${API_URL}/voiceai/v1/resources`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cv: entry.cv,
+          job: entry.jobDescription || "",
+          offer_research: entry.offer_research || null,
+          ats_match: entry.ats_match || null,
+          candidate_name: entry.cv?.contact?.full_name || null,
+        }),
+      });
+      const resourceData = await resourceRes.json().catch(() => ({}));
+      if (!resourceRes.ok) {
+        throw new Error(formatApiError(resourceData.detail, t("history.voiceFailed")));
+      }
+      const callRes = await fetch(`${API_URL}/voiceai/v1/start-call`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resource_id: resourceData.resource_id }),
+      });
+      const callData = await callRes.json().catch(() => ({}));
+      if (!callRes.ok) {
+        throw new Error(formatApiError(callData.detail, t("history.voiceFailed")));
+      }
+      if (!callData.call_url) {
+        throw new Error(t("history.voiceFailed"));
+      }
+      window.open(callData.call_url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setError(err.message || t("history.voiceFailed"));
+    } finally {
+      setVoiceCallingId(null);
+    }
+  };
+
   const isBusy =
     loading || honestLoading || fullAppLoading || analysisLoading || savingBase || rendering;
   const showLocalAnalysis =
@@ -815,35 +860,63 @@ function App() {
   const inputClass = "input-field";
 
   return (
-    <div className="mx-auto min-h-screen max-w-5xl px-4 py-8 pb-24 sm:px-6 md:pb-8">
+    <div className="mx-auto min-h-dvh max-w-6xl px-4 pb-28 sm:px-8 md:pb-10">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-neutral-900 focus:px-3 focus:py-2 focus:text-sm focus:text-white"
+      >
+        Skip to content
+      </a>
+      <div className="flex items-center justify-between gap-4 border-b border-neutral-300/70 py-4">
+        <span className="flex items-center gap-2 text-sm font-semibold tracking-tight text-neutral-900">
+          <span className="font-display flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-base leading-none text-accent-500">
+            c
+          </span>
+          {t("app.badge")}
+        </span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleLoadDemo}
+            className="hidden rounded-lg px-2 py-1 text-sm text-neutral-600 transition hover:bg-neutral-200/60 hover:text-neutral-900 sm:inline"
+          >
+            {t("demo.button")}
+          </button>
+          <select
+            aria-label={t("app.uiLanguage")}
+            className="rounded-lg border border-neutral-300 bg-white/70 px-2.5 py-1.5 text-sm text-neutral-800 transition hover:border-neutral-400"
+            value={locale}
+            onChange={(e) => setLocale(e.target.value)}
+          >
+            {uiLanguages.map((lang) => (
+              <option key={lang.id} value={lang.id}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <motion.header
-        initial={{ opacity: 0, y: -12 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8 flex flex-wrap items-start justify-between gap-4"
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="grid gap-6 pb-10 pt-12 sm:pt-16 lg:grid-cols-[1fr_auto] lg:items-end"
       >
         <div>
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-600">{t("app.badge")}</p>
-          <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl">{t("app.title")}</h1>
-          <p className="mt-2 max-w-xl text-neutral-700">{t("app.subtitle")}</p>
-          <button type="button" onClick={handleLoadDemo} className="mt-3 text-sm font-medium text-neutral-700 underline hover:text-neutral-900">
+          <h1 className="font-display max-w-3xl text-4xl leading-[1.02] text-neutral-950 sm:text-6xl">{t("app.title")}</h1>
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-neutral-600">{t("app.subtitle")}</p>
+          <button
+            type="button"
+            onClick={handleLoadDemo}
+            className="mt-4 text-sm font-medium text-accent-700 underline decoration-accent-500/40 underline-offset-4 transition hover:decoration-accent-600 sm:hidden"
+          >
             {t("demo.button")}
           </button>
         </div>
-        <select
-          aria-label={t("app.uiLanguage")}
-          className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 shadow-sm"
-          value={locale}
-          onChange={(e) => setLocale(e.target.value)}
-        >
-          {uiLanguages.map((lang) => (
-            <option key={lang.id} value={lang.id}>
-              {lang.label}
-            </option>
-          ))}
-        </select>
       </motion.header>
 
-      <main className="space-y-6">
+      <main id="main" className="space-y-6">
         {backendStatus !== "online" && (
           <div
             className={clsx(
@@ -883,7 +956,7 @@ function App() {
 
         <FlowGuide currentStep={flowStep} />
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
           <Card>
             <Label htmlFor="job-url">{t("urlImport.label")}</Label>
             <div className="mb-4 flex gap-2">
@@ -920,10 +993,10 @@ function App() {
             )}
           </Card>
 
-          <Card>
+          <Card className="flex flex-col">
             <Label htmlFor="cv-pdf">{t("cv.label")}</Label>
             {cvBase && (
-              <div className="mb-4 flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+              <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                 <div>
                   <p className="flex items-center gap-2 font-semibold text-neutral-900">
                     <FileText className="h-4 w-4" />
@@ -959,7 +1032,13 @@ function App() {
             <div
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
+              aria-label={t("cv.upload")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
               onDragOver={(e) => {
                 e.preventDefault();
                 setDragOver(true);
@@ -968,8 +1047,8 @@ function App() {
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className={clsx(
-                "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-8 text-neutral-700 transition",
-                dragOver ? "border-neutral-500 bg-neutral-100" : "border-neutral-300 bg-neutral-50 hover:border-neutral-400 hover:bg-white",
+                "flex min-h-44 w-full flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed px-4 py-10 text-neutral-700 transition",
+                dragOver ? "border-accent-500 bg-accent-50" : "border-neutral-300 bg-neutral-50 hover:border-accent-500 hover:bg-accent-50/50",
                 savingBase && "pointer-events-none opacity-60",
               )}
             >
@@ -980,7 +1059,9 @@ function App() {
                 </>
               ) : (
                 <>
-                  <Upload className="h-5 w-5 text-neutral-700" />
+                  <span className="mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-white text-accent-600 shadow-sm ring-1 ring-neutral-200">
+                    <Upload className="h-4 w-4" />
+                  </span>
                   <span className="text-sm font-medium">{t("cv.upload")}</span>
                   <span className="text-xs text-neutral-500">{t("cv.autoSaved")}</span>
                 </>
@@ -1007,25 +1088,25 @@ function App() {
                 onClick={action.onClick}
                 disabled={isBusy || !jobDescription.trim() || !hasCvSource}
                 className={clsx(
-                  "action-card text-left disabled:opacity-50",
-                  recommended && "ring-2 ring-neutral-900 ring-offset-2",
+                  "action-card group",
+                  recommended && "border-accent-500 ring-4 ring-accent-100",
                 )}
               >
-                <div className="mb-3 flex items-start justify-between gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-800">
+                <div className="mb-3 flex w-full items-start justify-between gap-2">
+                  <div className={clsx("flex h-10 w-10 items-center justify-center rounded-xl", recommended ? "bg-accent-600 text-white" : "bg-neutral-100 text-neutral-800")}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     {recommended && (
-                      <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-semibold text-white">
+                      <span className="rounded-md bg-accent-50 px-2 py-0.5 font-mono text-[0.68rem] font-medium uppercase tracking-wider text-accent-700">
                         {t("actionsGrid.recommended")}
                       </span>
                     )}
-                    <span className="text-xs text-neutral-500">{action.eta}</span>
+                    <span className="tabular font-mono text-xs text-neutral-500">{action.eta}</span>
                     <span
                       className={clsx(
-                        "rounded-full px-2.5 py-1 text-xs font-semibold",
-                        action.ai ? "bg-amber-100 text-amber-950" : "bg-neutral-100 text-neutral-700",
+                        "rounded-md px-2 py-0.5 text-xs font-medium",
+                        action.ai ? "bg-neutral-900 text-neutral-50" : "bg-neutral-100 text-neutral-600",
                       )}
                     >
                       {action.ai ? (
@@ -1039,16 +1120,19 @@ function App() {
                     </span>
                   </div>
                 </div>
-                <h3 className="text-lg font-bold text-neutral-900">{action.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-neutral-700">{action.desc}</p>
-                <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-neutral-900">
+                <h3 className="text-lg font-semibold tracking-tight text-neutral-900">{action.title}</h3>
+                <p className="mt-1 flex-1 text-sm leading-relaxed text-neutral-600">{action.desc}</p>
+                <div className={clsx("mt-5 inline-flex items-center gap-2 text-sm font-semibold", recommended ? "text-accent-700" : "text-neutral-900")}>
                   {action.loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {action.label}
                     </>
                   ) : (
-                    action.label
+                    <>
+                      {action.label}
+                      <ArrowRight className="h-4 w-4 transition-transform motion-reduce:transition-none group-hover:translate-x-0.5" />
+                    </>
                   )}
                 </div>
               </button>
@@ -1056,8 +1140,8 @@ function App() {
           })}
         </div>
 
-        <details className="rounded-2xl border border-neutral-200 bg-white px-5 py-4 shadow-sm">
-          <summary className="cursor-pointer text-sm font-semibold text-neutral-800">{t("actionsGrid.advanced")}</summary>
+        <details className="disclosure group/adv rounded-2xl border border-neutral-200 bg-white/60 px-5 py-4 transition open:bg-white">
+          <summary className="cursor-pointer select-none text-sm font-medium text-neutral-700 transition hover:text-neutral-950">{t("actionsGrid.advanced")}</summary>
           <div className="mt-4 space-y-4">
             <div>
               <Label htmlFor="template-id">{t("templates.label")}</Label>
@@ -1075,12 +1159,12 @@ function App() {
               </select>
               <p className="mt-1 text-xs text-neutral-600">{t("templates.hint")}</p>
             </div>
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3">
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 transition hover:border-neutral-300">
               <input
                 type="checkbox"
                 checked={fastMode}
                 onChange={(e) => setFastMode(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-400"
+                className="mt-0.5 h-4 w-4 rounded border-neutral-300 accent-accent-600"
               />
               <span>
                 <span className="block text-sm font-medium text-neutral-900">{t("fullApp.fastMode")}</span>
@@ -1090,15 +1174,29 @@ function App() {
           </div>
         </details>
 
-        {(loading || honestLoading || fullAppLoading) && (
-          <ApplicationProgress active={loading || honestLoading || fullAppLoading} indeterminate />
-        )}
+        <AnimatePresence initial={false}>
+          {(loading || honestLoading || fullAppLoading) && (
+            <motion.div
+              key="progress"
+              initial={{ opacity: 0, transform: "translateY(8px)" }}
+              animate={{ opacity: 1, transform: "translateY(0px)" }}
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+            >
+              <ApplicationProgress active indeterminate />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <Card>
           {error && (
-            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700" role="alert">
+            <motion.div
+              initial={{ opacity: 0, transform: "translateY(-4px)" }}
+              animate={{ opacity: 1, transform: "translateY(0px)" }}
+              className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700"
+              role="alert"
+            >
               {error}
-            </div>
+            </motion.div>
           )}
 
           {applicationReady && cvData && offerResearch && coverLetter && (
@@ -1144,7 +1242,7 @@ function App() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-4">
                 <div>
-                  <h3 className="text-lg font-bold text-neutral-900">{t("result.title")}</h3>
+                  <h3 className="font-display text-2xl text-neutral-950">{t("result.title")}</h3>
                   {cvDirty && <p className="mt-1 text-xs text-amber-800">{t("result.dirtyHint")}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1179,14 +1277,25 @@ function App() {
                 </div>
               </div>
 
-              {showEditor ? (
-                <CVEditor cv={cvData} onChange={handleCvChange} />
-              ) : (
-                <>
-                  <p className="text-xs text-neutral-600">{t("result.previewHint")}</p>
-                  <CVPreview cv={cvData} />
-                </>
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={showEditor ? "editor" : "preview"}
+                  initial={{ opacity: 0, filter: "blur(2px)" }}
+                  animate={{ opacity: 1, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, filter: "blur(2px)" }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-6"
+                >
+                  {showEditor ? (
+                    <CVEditor cv={cvData} onChange={handleCvChange} />
+                  ) : (
+                    <>
+                      <p className="text-xs text-neutral-600">{t("result.previewHint")}</p>
+                      <CVPreview cv={cvData} />
+                    </>
+                  )}
+                </motion.div>
+              </AnimatePresence>
 
               {pdfData?.base64 && (
                 <div className="overflow-hidden rounded-2xl border border-neutral-200">
@@ -1204,7 +1313,12 @@ function App() {
           )}
 
           {!atsMatch && !cvData && !loading && !honestLoading && !fullAppLoading && !analysisLoading && (
-            <p className="text-center text-sm text-neutral-600">{t("result.emptyHint")}</p>
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-500">
+                <FileText className="h-5 w-5" />
+              </span>
+              <p className="max-w-sm text-sm leading-relaxed text-neutral-600">{t("result.emptyHint")}</p>
+            </div>
           )}
         </Card>
 
@@ -1214,6 +1328,8 @@ function App() {
           onDelete={handleHistoryDelete}
           onClear={handleHistoryClear}
           onStatusChange={handleHistoryStatusChange}
+          onVoiceCall={handleVoiceCall}
+          voiceCallingId={voiceCallingId}
         />
       </main>
 
@@ -1225,8 +1341,11 @@ function App() {
         hasCoverLetter={Boolean(coverLetter)}
       />
 
-      <footer className="mt-10 pb-8 text-center text-sm text-neutral-500">
-        {t("footer.poweredBy")} {t("ai.gemini")}
+      <footer className="mt-16 flex items-center justify-between gap-4 border-t border-neutral-300/70 pt-6 text-sm text-neutral-500">
+        <span className="font-display text-base text-neutral-800">{t("app.badge")}</span>
+        <span>
+          {t("footer.poweredBy")} {t("ai.gemini")}
+        </span>
       </footer>
     </div>
   );

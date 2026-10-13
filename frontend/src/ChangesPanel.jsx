@@ -20,7 +20,7 @@ export default function ChangesPanel({ originalCv, adaptedCv, atsMatch }) {
     <motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
+      className="panel"
     >
       <div className="mb-4 flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-neutral-700" />

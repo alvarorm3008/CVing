@@ -780,6 +780,11 @@ def render_pdf(request: RenderPDFRequest):
     )
 
 
+from voiceai_router import router as voiceai_router
+
+app.include_router(voiceai_router)
+
+
 def _mount_frontend() -> None:
     if os.getenv("SERVE_FRONTEND", "").lower() not in ("1", "true", "yes"):
         return

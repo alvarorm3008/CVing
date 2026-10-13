@@ -15,7 +15,7 @@ export default function ApplicationProgress({ currentStep, active, indeterminate
 
   if (indeterminate) {
     return (
-      <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+      <div className="panel">
         <div className="mb-4 flex items-center gap-3">
           <Loader2 className="h-5 w-5 animate-spin text-neutral-700" />
           <p className="text-sm font-semibold text-neutral-900">{t("fullApp.progressTitle")}</p>
@@ -39,7 +39,7 @@ export default function ApplicationProgress({ currentStep, active, indeterminate
   }
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+    <div className="panel">
       <p className="mb-4 text-sm font-semibold text-neutral-900">{t("fullApp.progressTitle")}</p>
       <ol className="space-y-3">
         {STEPS.map((step) => {

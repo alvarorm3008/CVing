@@ -1,21 +1,107 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-display: "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* Warm paper-tinted grays: every existing neutral-* class picks these up */
+  --color-neutral-50: oklch(0.985 0.006 80);
+  --color-neutral-100: oklch(0.963 0.009 80);
+  --color-neutral-200: oklch(0.917 0.012 78);
+  --color-neutral-300: oklch(0.86 0.014 76);
+  --color-neutral-400: oklch(0.71 0.016 72);
+  --color-neutral-500: oklch(0.56 0.016 68);
+  --color-neutral-600: oklch(0.46 0.015 65);
+  --color-neutral-700: oklch(0.37 0.014 62);
+  --color-neutral-800: oklch(0.27 0.012 60);
+  --color-neutral-900: oklch(0.2 0.01 58);
+  --color-neutral-950: oklch(0.15 0.008 58);
+
+  /* Single accent: muted vermilion ink */
+  --color-accent-50: oklch(0.97 0.02 40);
+  --color-accent-100: oklch(0.93 0.045 40);
+  --color-accent-500: oklch(0.6 0.15 38);
+  --color-accent-600: oklch(0.53 0.15 36);
+  --color-accent-700: oklch(0.45 0.13 34);
+
+  /* Motion tokens: strong ease-out for UI, every Tailwind `transition` picks these up */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: var(--ease-out);
+}
+
+:root {
+  interpolate-size: allow-keywords;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   @apply bg-neutral-100 text-neutral-900 antialiased;
-  min-height: 100vh;
+  min-height: 100dvh;
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Paper grain */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .25 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 #root {
-  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--color-accent-100);
+  color: var(--color-neutral-950);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-600);
+  outline-offset: 2px;
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Shared readable surfaces */
 .panel {
-  @apply rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm;
+  @apply rounded-2xl border border-neutral-200/80 bg-white p-6 sm:p-7;
+  box-shadow:
+    0 1px 0 oklch(1 0 0 / 0.8) inset,
+    0 1px 2px oklch(0.4 0.03 60 / 0.06),
+    0 8px 24px -12px oklch(0.4 0.03 60 / 0.12);
+}
+
+.eyebrow {
+  @apply font-mono text-[0.7rem] font-medium uppercase tracking-[0.14em] text-neutral-500;
 }
 
 .text-body {
@@ -31,15 +117,16 @@ body {
 }
 
 .input-field {
-  @apply w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-300;
+  @apply w-full rounded-xl border border-neutral-300 bg-neutral-50 px-4 py-3 text-neutral-900 placeholder-neutral-500 transition hover:border-neutral-400 focus:border-accent-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-accent-100;
 }
 
 .btn-primary {
-  @apply inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50;
+  @apply inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-neutral-50 transition hover:bg-neutral-800 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50;
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.12) inset, 0 2px 6px -2px oklch(0.2 0.01 58 / 0.4);
 }
 
 .btn-secondary {
-  @apply inline-flex items-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition hover:bg-neutral-50 disabled:opacity-50;
+  @apply inline-flex items-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition hover:border-neutral-400 hover:bg-neutral-50 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50;
 }
 
 @keyframes shimmer {
@@ -48,19 +135,47 @@ body {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, rgb(245 245 245) 25%, rgb(229 229 229) 50%, rgb(245 245 245) 75%);
+  background: linear-gradient(90deg, var(--color-neutral-100) 25%, var(--color-neutral-200) 50%, var(--color-neutral-100) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.5s linear infinite;
 }
 
 .action-card {
-  @apply relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition text-left;
+  @apply relative flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 text-left transition duration-200;
 }
 
-.action-card:hover:not(:disabled) {
-  @apply border-neutral-400 shadow-md;
+/* Touch fires false hovers on tap: only lift on real pointers */
+@media (hover: hover) and (pointer: fine) {
+  .action-card:hover:not(:disabled) {
+    @apply -translate-y-0.5 border-neutral-400;
+    box-shadow: 0 14px 30px -18px oklch(0.4 0.03 60 / 0.35);
+  }
+}
+
+.action-card:active:not(:disabled) {
+  @apply translate-y-0 scale-[0.99];
+}
+
+/* Disclosure open/close; browsers without ::details-content just snap */
+.disclosure::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition: block-size 250ms var(--ease-out), content-visibility 250ms allow-discrete;
+}
+
+.disclosure[open]::details-content {
+  block-size: auto;
 }
 
 .action-card:disabled {
   @apply cursor-not-allowed opacity-50;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .skeleton { animation: none; }
+  /* Keep color feedback, drop movement */
+  .action-card, .btn-primary, .btn-secondary { transition-property: color, background-color, border-color, box-shadow, opacity; }
+  .action-card:hover:not(:disabled), .action-card:active:not(:disabled), .btn-primary:active, .btn-secondary:active { transform: none; }
+  .disclosure::details-content { transition: none; }
 }

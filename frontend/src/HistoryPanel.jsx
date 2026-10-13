@@ -1,4 +1,4 @@
-import { Clock, History, Trash2 } from "lucide-react";
+import { Clock, History, Phone, Trash2 } from "lucide-react";
 import { useI18n } from "./i18n/I18nContext.jsx";
 import {
   formatDate,
@@ -14,7 +14,15 @@ const STATUS_LABEL_KEYS = {
   rejected: "history.statusRejected",
 };
 
-export default function HistoryPanel({ history, onSelect, onDelete, onClear, onStatusChange }) {
+export default function HistoryPanel({
+  history,
+  onSelect,
+  onDelete,
+  onClear,
+  onStatusChange,
+  onVoiceCall,
+  voiceCallingId,
+}) {
   const { t, locale } = useI18n();
   const dateLocale = DATE_LOCALE_MAP[locale] || "es-ES";
 
@@ -92,6 +100,21 @@ export default function HistoryPanel({ history, onSelect, onDelete, onClear, onS
                 </option>
               ))}
             </select>
+            {typeof onVoiceCall === "function" && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onVoiceCall(entry);
+                }}
+                disabled={voiceCallingId === entry.id || !entry.cv}
+                className="flex items-center px-3 text-neutral-500 transition hover:bg-emerald-50 hover:text-emerald-800 disabled:opacity-40"
+                aria-label={t("history.voiceCall")}
+                title={t("history.voiceCall")}
+              >
+                <Phone className="h-4 w-4" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onDelete(entry.id)}
